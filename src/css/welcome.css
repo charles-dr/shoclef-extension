@@ -1,0 +1,26 @@
+body {
+  background-color: var(--bg-body);
+  color: white;
+}
+
+
+#welcome {
+  max-width: 400px;
+  padding: 20px 15px 30px 15px;
+  min-width: 300px;
+  margin: auto;
+}
+
+#welcome .hey { 
+  font-size: 16px;
+  font-weight: bold;
+  color: #898989;
+}
+
+#welcome .welcome-back {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00E6F3;
+}
+
+
