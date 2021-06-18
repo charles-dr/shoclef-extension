@@ -37,21 +37,42 @@
       "matches": ["\u003Call_urls>"],
       "run_at": "document_start",
       "js": [
-        "src/plugins/jquery.js"
+        "src/plugins/jquery.js",
+        "src/plugins/toastr/toastr.min.js"
+      ],
+      "css": [
+        "src/plugins/toastr/toastr.min.css"
       ]
     },
     {
       "matches": ["<all_urls>"],
       "js": [
+        "src/js/content/all.js",
         "src/plugins/axios.min.js"
       ]
     },
     {
       "js": [
-        "src/js/content/all.js"
+        "src/js/content/websites/macys.com.js"
       ],
       "matches": [
-        "<all_urls>"
+        "https://www.macys.com/*"
+      ]
+    },
+    {
+      "js": [
+        "src/js/content/websites/zulily.com.js"
+      ],
+      "matches": [
+        "https://www.zulily.com/*"
+      ]
+    },
+    {
+      "js": [
+        "src/js/content/websites/ebay.com.js"
+      ],
+      "matches": [
+        "https://www.ebay.com/*"
       ]
     }
   ],

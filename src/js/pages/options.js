@@ -3,7 +3,7 @@
 $(function() {
   initPage();
 
-  addEventListeners();
+  // addEventListeners();
 });
 
 function initPage() {

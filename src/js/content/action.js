@@ -9,7 +9,7 @@ var discordWebhook =
   "https://discord.com/api/webhooks/837812705514749963/AY62TnOMoQ4Gk8rA56HV2SAXmhFImjPY1yDR8uuE-QOhw-Qo2lkayepxXoNHoGuNpUky";
 
 $(function () {
-  console.log("[Script][Action] Loaded");
+  console.log("[Script][Action] Loaded", typeof startScan);
 
   chrome.extension.sendMessage({ type: "requestData" }, function (data) {
     discordWebhook = data.discordWebhook;
@@ -38,7 +38,7 @@ function startScan() {
     console.log('[Action][Scan] starting...')
     scanner = setInterval(batchScan, 500);
   } else {
-    console.log("[No Live Chat] iterating...");
+    // console.log("[No Live Chat] iterating...");
     setTimeout(startScan, 200);
   }
 }

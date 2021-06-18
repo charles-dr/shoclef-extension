@@ -234,12 +234,25 @@ button:focus {
 
 #header {
   background-color: var(--bg-body);
-  padding-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5rem;
+  /* background-color: red; */
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 #header img {
-  height: 70px;
+  height: 40px;
 }
+
+#top-menu {
+  display: flex;
+}
+ul#top-menu { list-style: none; font-size: 16px; }
+ul#top-menu > li { padding: 5px 15px; cursor: pointer; }
+ul#top-menu > li > a { color: white; transition: all 0.3s; }
+ul#top-menu > li:hover > a { color: #cecece; }
 
 /* Tabs */
 
