@@ -1,6 +1,7 @@
 /* 
  * 1. Header
  * 2. Page Container
+ * 3. Form Wrapper
  */
 
 
@@ -34,5 +35,14 @@
 .page-container {
   padding: 1.5rem 1rem;
 }
+
+/* 3. Form Wrapper */
+#form-wrapper {
+  transition: 0.3s all;
+  overflow: hidden;
+}
+#form-wrapper._show { height: unset; }
+#form-wrapper._hide { height: 0px; }
+
 
 
