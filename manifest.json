@@ -23,7 +23,8 @@
     "identity",
     "storage",
     "<all_urls>","webRequest","webRequestBlocking",
-    "tabs"
+    "tabs",
+    "webNavigation"
   ],
   "background": {
     "scripts": [
@@ -49,30 +50,6 @@
       "js": [
         "src/js/content/all.js",
         "src/plugins/axios.min.js"
-      ]
-    },
-    {
-      "js": [
-        "src/js/content/websites/macys.com.js"
-      ],
-      "matches": [
-        "https://www.macys.com/*"
-      ]
-    },
-    {
-      "js": [
-        "src/js/content/websites/zulily.com.js"
-      ],
-      "matches": [
-        "https://www.zulily.com/*"
-      ]
-    },
-    {
-      "js": [
-        "src/js/content/websites/ebay.com.js"
-      ],
-      "matches": [
-        "https://www.ebay.com/*"
       ]
     }
   ],

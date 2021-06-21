@@ -32,6 +32,16 @@ class ShoclefScraper {
 $(function () {
   console.log("[Script][All] Loaded!", typeof fetchInfo);
   window.addEventListener("keyup", doKeyPress, false); //add the keyboard handler
+
+
+});
+
+
+chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
+  console.log('[Message]', message, sender, sendResponse);
+  if (type === 'DO_SCRAPING') {
+    // start scraping
+  }
 });
 
 // if (window == top) {
