@@ -36,11 +36,12 @@ $(function () {
 
 });
 
-
 chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
   console.log('[Message]', message, sender, sendResponse);
-  if (type === 'DO_SCRAPING') {
+  const { type, site } = message;
+  if (type === 'DO_SCRAPING' && site) {
     // start scraping
+
   }
 });
 
