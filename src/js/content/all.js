@@ -1,6 +1,8 @@
 class ShoclefScraper {
-  constructor() {
-    console.log('[ShoclefScrper] initialized!');
+  siteProfile = {};
+  constructor(siteProfile) {
+    console.log('[ShoclefScrper] initialized!', siteProfile);
+    this.siteProfile = siteProfile;
     this.productInfo = {
       title: '',
       description: '',
@@ -22,6 +24,7 @@ class ShoclefScraper {
   doScrap() {
     // collect data from page.
     console.log('[ShoclefScraper][InitStat] defined the function!');
+    toastr.info('Scraping starting...');
   }
 
   completeScraping() {
@@ -41,7 +44,8 @@ chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
   const { type, site } = message;
   if (type === 'DO_SCRAPING' && site) {
     // start scraping
-
+    console.log('[GO][DO_SCRAPING]');
+    startScraping(site);
   }
 });
 
@@ -49,6 +53,12 @@ chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
 // }
 
 trigger_key = 13; // enter key
+
+function startScraping(siteProfile) {
+  const scraper = new ShoclefScraper(siteProfile);
+  scraper.doScrap();
+}
+
 function doKeyPress(e) {
   if (e.ctrlKey && e.keyCode == trigger_key) {
     alert('Hi!')
