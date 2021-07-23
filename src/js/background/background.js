@@ -2,9 +2,52 @@ var _tabs = [];
 var _sites = [];
 var appData;
 
+const activity = {
+  initializeSetting: async () => {
+    return _MEMORY.loadSettings()
+      .then(settings => {
+        const max_tabs = settings.max_tabs || 3;
+        settings = { ...settings, scraping: false, max_tabs };
+        return _MEMORY.storeSettings(settings);
+      });
+  },
+  openNewTab: (url = null) => {
+    url = url || "https://google.com";
+    return new Promise((resolve, reject) => {
+      const tab = chrome.tabs.create({ url }, (tab => {
+        console.log('[Tab created] callback', tab)
+        _tabs.push(tab.id);
+        resolve(tab.id);
+      }));
+    });
+  },
+  closeTabs: async (ids) => {
+    return chrome.tabs.remove(ids);
+  },
+  selectCandidateProducts: (num) => {
+    return _MEMORY.loadProducts()
+      .then(products => products.filter(product => !product.scraping && !product.completed))
+      .then((products) => products.slice(0, num));
+  },
+  fillEmptyTabs: () => {
+    return _MEMORY.loadSettings()
+      .then(settings => {
+        if (!settings.scraping) throw new Error('Scraping is inactive!');
+        if (_tabs.length >= settings.max_tabs) throw new Error('Already running max tabs!');
+        return activity.selectCandidateProducts(settings.max_tabs - _tabs.length);
+      })
+      .then((products) => Promise.all(products.map(product => activity.openNewTab(product.url))))
+      .catch(error => {
+        console.log(`[Fill Empty Tabs] Error: ${error.message}`);
+      });
+  },
+};
+
+
 onBackgroundScriptLoaded();
 
-chrome.webNavigation.onCompleted.addListener(function({ url, tabId, processId, frameId, parentFrameId, timestamp }) {
+// tab opened completely
+chrome.webNavigation.onCompleted.addListener(async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
   console.log('[Tab Loaded]', url, tabId, _tabs);
 
   const parsedURL = new URL(url);
@@ -19,31 +62,44 @@ chrome.webNavigation.onCompleted.addListener(function({ url, tabId, processId, f
   }
 });
 
+// listen to closing tabs
+chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  _tabs.splice(_tabs.indexOf(tabId), 1);
+  console.log('[Tab Closed]', tabId, removeInfo, _tabs);
+});
+
 chrome.extension.onMessage.addListener(function (
   request,
   sender,
   sendResponse
 ) {
-  console.log('[Data] Requested')
+  console.log('[Data] Requested', request)
   const { type } = request;
   // console.log('[message]', request, sender);
   if (type === "requestData") {
     sendResponse(appData);
+  } else if (type === _ACTION.START_SCRAP) {
+    return _MEMORY.loadSettings()
+      .then(settings => {
+        settings.scraping = true;
+        return _MEMORY.storeSettings(settings);
+      })
+      .then(settings => activity.fillEmptyTabs());
   }
 });
 
 chrome.storage.onChanged.addListener(function (changes, namespace) {
-  const { oldValue, newValue } = changes.data;
-  console.log('[Data][Updated]', newValue);
-  appData = newValue;
+  // const { newValue } = changes.data; //oldValue, 
+  // console.log('[Data][Updated]', newValue);
+  // appData = newValue;
 });
 
-function onBackgroundScriptLoaded() {
+async function onBackgroundScriptLoaded() {
   console.log('[Background] Loaded');
+  await activity.initializeSetting();
+  
   loadData();
-
   // setInterval(openNewTab, 5000);
-  openNewTab();
 
   loadSiteProfiles().then((sites) => {
     _sites = sites;

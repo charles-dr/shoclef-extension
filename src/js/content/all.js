@@ -62,8 +62,8 @@ function startScraping(siteProfile) {
 function doKeyPress(e) {
   if (e.ctrlKey && e.keyCode == trigger_key) {
     alert('Hi!')
-    scraper.initInfo();
-    scraper.doScrap();
-    toastr.info('Are you the 6 fingered man?')
+    // scraper.initInfo();
+    // scraper.doScrap();
+    // toastr.info('Are you the 6 fingered man?')
   }
 }

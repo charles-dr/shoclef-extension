@@ -74,6 +74,7 @@ function loadDataAndShow() {
       <td>${product.images}</td>
       <td>${product.createdAt}</td>
       <td>${product.updatedAt}</td>
+      <td>${!!product.scraping}</td>
       <td>${product.completed}</td>
       <td>${product.url}</td>
     </tr>`);
@@ -95,6 +96,7 @@ function loadDataAndRedraw() {
       <td>${product.images}</td>
       <td>${product.createdAt || Date.now()}</td>
       <td>${product.updatedAt || Date.now()}</td>
+      <td>${product.scraping || false}</td>
       <td>${product.completed || false}</td>
       <td>${product.url}</td>
     </tr>`);
@@ -109,6 +111,7 @@ function loadDataAndRedraw() {
       product.images,
       product.createdAt,
       product.updatedAt,
+      product.scraping,
       product.completed,
       product.url,
     ]));
@@ -166,6 +169,7 @@ function initDataTable() {
             },
             {
               targets: -2,
+              label: 'Status',
               render: function (data, type, full, meta) {
                   const status = {
                       'false': {'title': 'Inactive', 'class': 'm-badge--warning'},
@@ -180,6 +184,21 @@ function initDataTable() {
             },
             {
               targets: -3,
+              label: 'Scraping',
+              render: function (data, type, full, meta) {
+                const status = {
+                  'false': { 'title': 'Waiting', 'class': 'm-badge--success' },
+                  'true': { 'title': 'Yes', 'class': 'm-badge--danger' },
+                };
+                if (typeof status[data] === 'undefined') {
+                  return data;
+                }
+                return '<span class="m-badge ' + status[data].class + ' m-badge--wide">' + status[data].title + '</span>';
+              },
+            },
+            {
+              targets: -4,
+              label: 'Updated At',
               render: function (data, type, full, meta) {
                 data = parseInt(data, 10);
                 let dt = new Date(data);
@@ -187,7 +206,8 @@ function initDataTable() {
               },
             },
             {
-              targets: -4,
+              targets: -5,
+              label: 'Created At',
               render: function (data, type, full, meta) {
                 data = parseInt(data, 10);
                 let dt = new Date(data);
@@ -254,6 +274,7 @@ function onEdit(url) {
   $('#colors').val(product.colors);
   $('#sizes').val(product.sizes);
   $('#completed').attr('checked', !!product.completed);
+  $('#scraping').attr('checked', !!product.scraping);
 
   $('#website-form button[type="submit"]').html('<i class="la la-save"></i>Update');
   $('#form-wrapper').removeClass('_hide').addClass('_show');
@@ -297,13 +318,14 @@ function validateForm() {
   const oldPrice = $('#oldPrice').val();
   const colors = $('#colors').val();
   const sizes = $('#sizes').val();
+  const scraping = $('#scraping').is(':checked');
 
   if (!url.trim()) {
     toastr.warning('URL is required!', 'Validation');
     return true;
   }
   return {
-    url, completed, title, description, brand, category, images, price, oldPrice, colors, sizes,
+    url, completed, title, description, brand, category, images, price, oldPrice, colors, sizes, scraping,
   };
 }
 

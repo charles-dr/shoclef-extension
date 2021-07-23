@@ -10,10 +10,15 @@ class Product {
   colors = [];
   sizes = [];
   variants = [];
+  completed = false;
+  scraping = false;
+  createdAt = null;
+  updatedAt = null;
 
   constructor({
     url, title, description, price, oldPrice, brand, category,
-    images = [], colors = [], sizes = [], variants = [],
+    images = [], colors = [], sizes = [], variants = [], completed = false, scraping = false,
+    createdAt = null, updatedAt = null,
   }) {
     if (!url) {
       throw new Error('Product must have valid URL!');
@@ -29,6 +34,10 @@ class Product {
     if (colors.length) this.colors = colors;
     if (sizes.length) this.sizes = sizes;
     if (variants.length) this.variants = variants;
+    this.completed = completed;
+    this.scraping = scraping;
+    this.createdAt = createdAt || Date.now();
+    this.updatedAt = updatedAt || Date.now();
   }
 
   toObject() {
@@ -44,6 +53,10 @@ class Product {
       colors: this.colors,
       sizes: this.sizes,
       variants: this.variants,
+      completed: this.completed,
+      scraping: this.scraping,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 }

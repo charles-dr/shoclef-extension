@@ -28,6 +28,7 @@
   ],
   "background": {
     "scripts": [
+      "src/js/basics/constants.js",
       "src/js/background/background.js"
     ],
     "persistent": true
@@ -49,6 +50,7 @@
       "matches": ["<all_urls>"],
       "js": [
         "src/js/basics/classes.js",
+        "src/js/basics/constants.js",
         "src/js/content/all.js",
         "src/plugins/axios.min.js"
       ]

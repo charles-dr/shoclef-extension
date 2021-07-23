@@ -37,20 +37,28 @@
                         </h3>
                     </div>
                 </div>
-                <div class="m-portlet__head-tools">
-                    <ul class="m-portlet__nav">
-                        <li class="m-portlet__nav-item">
-                            <span href="#"
-                              class="btn btn-accent m-btn m-btn--custom m-btn--pill m-btn--icon m-btn--air"
-                              id="add-item">
-                                <span>
-                                    <i class="la la-plus"></i>
-                                    <span>New record</span>
-                                </span>
-                              </span>
-                        </li>
-                    </ul>
+            </div>
+
+
+            <div class="m-portlet__body" id="form-wrapper" style="padding: 1rem;">
+              <form id="toggle-scrap-form" style="padding: 2.2rem 2.2rem;border: 1px solid #dcdcdc; border-radius: 5px;">
+                <input type="hidden" id="product-id" name="id" value="-1"/>
+                <div class="row">
+                  <div class="col-sm-12 col-md-6">
+                      <div class="form-group form-group-default">
+                        <label>Max Tabs to Open<span class="text-danger">*</span></label>
+                        <input class="form-control" type="text" id="max-tabs" name="max-tabs"
+                                value="3" required/>
+                      </div>
+                  </div>
                 </div>
+                <!-- Submit Container -->
+                <div class="d-flex justify-content-end">
+                  <button type="submit" id="toggle-scraping" class="btn btn-accent m-btn m-btn--custom m-btn--pill m-btn--icon m-btn--air">
+                    <i class="la la-play"></i>Start
+                  </button>
+                </div>
+              </form>
             </div>
 
             <div class="m-portlet__body">
@@ -73,111 +81,6 @@
                 </div>
               </div>
             </div>
-
-            <div class="m-portlet__body _hide" id="form-wrapper" style="padding: 0;">
-              <hr/>
-              <form id="website-form" style="padding: 2.2rem 2.2rem;">
-                  <input type="hidden" id="product-id" name="id" value="-1"/>
-                  <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>URL<span class="text-danger">*</span></label>
-                            <input class="form-control" type="text" id="url" name="url"
-                                    value="" required/>
-                        </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6">
-                        <label>Completed</label>
-                        <span class="m-switch" style="display: block;">
-                          <label>
-                            <input type="checkbox" class="form-control" id="completed" name="completed"/>
-                            <span></span>
-                          </label>
-                        </span>
-                    </div>
-                  </div>
-                  <div class="row">
-                      <div class="col-sm-12 col-md-6">
-                          <div class="form-group form-group-default">
-                              <label>Title</label>
-                              <input class="form-control" type="text" id="title" name="title"
-                                     value="" placeholder="Enter Title" />
-                          </div>
-                      </div>
-                      <div class="col-sm-12 col-md-6">
-                          <div class="form-group form-group-default">
-                              <label>Description</label>
-                              <textarea class="form-control" type="text" id="description" name="description"
-                                     value="" placeholder="Enter Description" ></textarea>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>Brand</label>
-                            <input class="form-control" type="text" id="brand" name="brand"
-                                   value="" placeholder="Enter Brand"/>
-                        </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>Category</label>
-                            <input class="form-control" type="text" id="category" name="category"
-                                   value="" placeholder="Enter Category"/>
-                        </div>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>Images</label>
-                            <input class="form-control" type="text" id="images" name="images"
-                                   value="" />
-                        </div>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                      <div class="form-group form-group-default">
-                          <label>Price</label>
-                          <input class="form-control" type="text" id="price" name="price"
-                                value="" placeholder="Enter Price"/>
-                      </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6">
-                      <div class="form-group form-group-default">
-                        <label>Old Price</label>
-                        <input class="form-control" type="text" id="oldPrice" name="oldPrice"
-                                value="" placeholder="Enter Old Price" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>Color</label>
-                            <input class="form-control" type="text" id="colors" name="colors"
-                                   value="" placeholder="Red,Blue"/>
-                        </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6">
-                        <div class="form-group form-group-default">
-                            <label>Size</label>
-                            <input class="form-control" type="text" id="sizes" name="sizes"
-                                   value="" placeholder="XL,XXL"/>
-                        </div>
-                    </div>
-                  </div>
-                  <!-- Submit Container -->
-                  <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary m-btn m-btn--custom m-btn--icon m-btn--air">
-                        <i class="la la-plus"></i>Add
-                    </button>
-                  </div>
-              </form>
-            </div>
-
         </div>
         <!-- END EXAMPLE TABLE PORTLET-->
       </div>
@@ -187,7 +90,8 @@
     <script src="./../theme/scripts.bundle.js"></script>
     <script src="./../theme/datatables.bundle.js"></script>
     <!-- <script src="./../plugins/jquery.js"></script> -->
+    <script src="./../js/basics/constants.js"></script>
     <script src="./../js/basics/classes.js"></script>
-    <script src="./../js/pages/products.js"></script>
+    <script src="./../js/pages/index.js"></script>
   </body>
 </html>
