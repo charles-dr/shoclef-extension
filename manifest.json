@@ -48,6 +48,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "src/js/basics/classes.js",
         "src/js/content/all.js",
         "src/plugins/axios.min.js"
       ]

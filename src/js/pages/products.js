@@ -1,4 +1,4 @@
-var _websites = [];
+var _products = [];
 var _dataTable;
 
 $(function() {
@@ -8,41 +8,38 @@ $(function() {
 
   $('#website-form').on('submit', function(e) {
     e.preventDefault();
+
+    const formData = validateForm();
+
+    if (!formData) return false;
+
+    const index = _products.map(prod => prod.url).indexOf(formData.url);
+    // check duplicate profile.
+    const id = Number($('#product-id').val());
+    if (id === -1 && index > -1) {
+      toastr.error('URL already exists in product list!');
+      return;
+    }
+
     if (!confirm('Are you sure to submit?')) return false;
-    const formData = {
-      domain: $('#domain').val(),
-      title: $('#title').val(),
-      description: $('#description').val(),
-      image: $('#image').val(),
-      brand: $('#brand').val(),
-      category: $("#category").val(),
-      price: $('#price').val(),
-      oldPrice: $('#oldPrice').val(),
-      color: $('#color').val(),
-      size: $('#size').val(),
-      active: $('#active').is(':checked'),
-    };
-    return loadSiteProfiles().then((profiles) => {
-      // check duplicate profile.
-      const id = Number($('#site-id').val());
-      // const [duplicated] = profiles.filter((profile) => websiteProfile.domain === profile.domain);
-      // if (duplicated) throw new Error(`Domain "${websiteProfile.domain}" already exists!`);
-      
-      const websiteProfile = {
+    
+
+    return loadProducts().then((products) => {
+      const product = {
         createdAt: Date.now(),
-        ...(_websites[id] || {}),
+        ...(products[id] || {}),
         ...formData,
         updatedAt: Date.now(),
       };
       if (id > -1) {
-        profiles[id] = websiteProfile;
+        products[id] = product;
       } else {
-        profiles.push(websiteProfile);  
+        products.push(product);  
       }
-      return storeSiteProfiles(profiles);
+      return storeProducts(products);
     })
-    .then((profiles) => {
-      _websites = profiles;
+    .then((products) => {
+      _products = products;
       emptyForm();
       loadDataAndRedraw();
       toastr.success('Data saved successfully!');
@@ -54,26 +51,31 @@ $(function() {
   });
 
   $('#tableWithDynamicRows').on('click', '.edit-row', function() {
-    onEdit($(this).data('domain'));
+    onEdit($(this).data('url'));
   });
 
   $('#tableWithDynamicRows').on('click', '.delete-row', function() {
-    onDelete($(this).data('domain'));
+    onDelete($(this).data('url'));
   });
 
   loadDataAndShow();
 });
 
 function loadDataAndShow() {
-  loadSiteProfiles().then((profiles) => {
-    _websites = profiles;
-    const rowsHTML = profiles.map((profile, i) => `<tr>
+  loadProducts().then((products) => {
+    _products = products;
+    const rowsHTML = products.map((product, i) => `<tr>
       <td>${i + 1}</td>
-      <td>${profile.domain}</td>
-      <td>${profile.createdAt || Date.now()}</td>
-      <td>${profile.updatedAt || Date.now()}</td>
-      <td>${profile.active || true}</td>
-      <td>${profile.domain}</td>
+      <td>${product.url}</td>
+      <td>${product.title}</td>
+      <td>${product.description}</td>
+      <td>${product.brand}</td>
+      <td>${product.category}</td>
+      <td>${product.images}</td>
+      <td>${product.createdAt}</td>
+      <td>${product.updatedAt}</td>
+      <td>${product.completed}</td>
+      <td>${product.url}</td>
     </tr>`);
     $('#tableWithDynamicRows tbody').html(rowsHTML);
     initDataTable();
@@ -81,18 +83,35 @@ function loadDataAndShow() {
 }
 
 function loadDataAndRedraw() {
-  loadSiteProfiles().then((profiles) => {
-    _websites = profiles;
-    const rowsHTML = profiles.map((profile, i) => `<tr>
+  loadProducts().then((products) => {
+    _products = products;
+    const rowsHTML = products.map((product, i) => `<tr>
       <td>${i + 1}</td>
-      <td>${profile.domain}</td>
-      <td>${profile.createdAt || Date.now()}</td>
-      <td>${profile.updatedAt || Date.now()}</td>
-      <td>${profile.active || true}</td>
-      <td>${profile.domain}</td>
+      <td>${product.url}</td>
+      <td>${product.title}</td>
+      <td>${product.description}</td>
+      <td>${product.brand}</td>
+      <td>${product.category}</td>
+      <td>${product.images}</td>
+      <td>${product.createdAt || Date.now()}</td>
+      <td>${product.updatedAt || Date.now()}</td>
+      <td>${product.completed || false}</td>
+      <td>${product.url}</td>
     </tr>`);
     _dataTable.fnClearTable();
-    const data = profiles.forEach((profile, i) => _dataTable._fnAddData([i + 1, profile.domain, profile.createdAt, profile.updatedAt, profile.active, profile.domain]));
+    const data = products.forEach((product, i) => _dataTable._fnAddData([
+      i + 1,
+      product.url,
+      product.title,
+      product.description,
+      product.brand,
+      product.category,
+      product.images,
+      product.createdAt,
+      product.updatedAt,
+      product.completed,
+      product.url,
+    ]));
     
     // _dataTable._fnAddData(data);
     // $('#tableWithDynamicRows tbody').html(rowsHTML);
@@ -130,15 +149,16 @@ function initDataTable() {
           columnDefs: [
             {
               targets: -1,
+              label: 'Actions',
               orderable: false,
               render: function (data, type, full, meta) {
                 return `
                   <span class="edit-row m-portlet__nav-link btn m-btn m-btn--hover-brand m-btn--icon m-btn--icon-only m-btn--pill" title="Edit"
-                    data-domain="${data}">
+                    data-url="${data}">
                     <i class="la la-edit"></i>
                   </span>
                   <span href="#" class="delete-row m-portlet__nav-link btn m-btn m-btn--hover-brand m-btn--icon m-btn--icon-only m-btn--pill" title="Remove"
-                    data-domain="${data}">
+                    data-url="${data}">
                     <i class="la la-trash"></i>
                   </span>
                 `;
@@ -174,12 +194,13 @@ function initDataTable() {
                 return dt.toLocaleString();
               },
             },
-            // {
-            //   targets: 1,
-            //   render: function (data, type, full, meta) {
-            //     return `<a href="${data}">${data}</a>`;
-            //   },
-            // },
+            {
+              targets: 1,
+              label: "URL",
+              render: function (data, type, full, meta) {
+                return `<a href="${data}" target="_blank">${shortenURL(data)}</a>`;
+              },
+            },
           ]
       };
 
@@ -188,11 +209,11 @@ function initDataTable() {
   initTableWithDynamicRows();
 }
 
-function loadSiteProfiles() {
+function loadProducts() {
   return new Promise((resolve, reject) => {
     try {
-      chrome.storage.local.get(["websites", "websites1"], function (store = {}) {
-        resolve(store.websites || []);      
+      chrome.storage.local.get(["products", "websites1"], function (store = {}) {
+        resolve(store.products || []);      
       });
     } catch (e) {
       reject(e);
@@ -200,51 +221,52 @@ function loadSiteProfiles() {
   });
 }
 
-function storeSiteProfiles(profiles) {
+function storeProducts(products) {
   return new Promise((resolve) => {
     try {
-      chrome.storage.local.set({ websites: profiles });
-      resolve(profiles);
+      chrome.storage.local.set({ products: products });
+      resolve(products);
     } catch (e) {
       reject(e);
     }
   });
 }
 
-function onEdit(domain) {
-  let site, index;
-  _websites.forEach((s, i) => {
-    if (s.domain === domain) {
-      site = s;
+function onEdit(url) {
+  let product, index;
+  _products.forEach((prd, i) => {
+    if (prd.url === url) {
+      product = prd;
       index = i;
     }
   });
 
-  $('#site-id').val(index);
+  $('#product-id').val(index);
 
-  $('#domain').val(site.domain);
-  $('#title').val(site.title);
-  $('#description').val(site.description);
-  $('#image').val(site.image);
-  $('#brand').val(site.brand);
-  $('#category').val(site.category);
-  $('#price').val(site.price);
-  $('#oldPrice').val(site.oldPrice);
-  $('#color').val(site.color);
-  $('#size').val(site.size);
-  $('#active').attr('checked', !!site.active);
+  $('#url').val(product.url);
+  $('#title').val(product.title);
+  $('#description').val(product.description);
+  $('#images').val(product.images);
+  $('#brand').val(product.brand);
+  $('#category').val(product.category);
+  $('#price').val(product.price);
+  $('#oldPrice').val(product.oldPrice);
+  $('#colors').val(product.colors);
+  $('#sizes').val(product.sizes);
+  $('#completed').attr('checked', !!product.completed);
 
   $('#website-form button[type="submit"]').html('<i class="la la-save"></i>Update');
   $('#form-wrapper').removeClass('_hide').addClass('_show');
 }
 
-function onDelete(domain) {
-  if (!confirm('Are you sure to delete this website profile?')) return false;
-  const index = _websites.map((site) => site.domain).indexOf(domain);
-  _websites.splice(index, 1);
-  return storeSiteProfiles(_websites).then((profiles) => {
+function onDelete(url) {
+  if (!confirm('Are you sure to delete this product?')) return false;
+
+  const index = _products.map((product) => product.url).indexOf(url);
+  _products.splice(index, 1);
+  return storeProducts(_products).then((products) => {
     loadDataAndRedraw();
-    toastr.success('A website has been deleted!');
+    toastr.success('A product has been deleted!');
   })
   .catch((error) => {
     console.log('[onDelete][Error]', error);
@@ -253,7 +275,7 @@ function onDelete(domain) {
 }
 
 function onClickAddButton() {
-  const isEditing = Number($('#site-id').val()) > -1;
+  const isEditing = Number($('#product-id').val()) > -1;
   const opened = $('#form-wrapper').hasClass('_show');
   emptyForm();
   if (opened && !isEditing) {
@@ -263,11 +285,43 @@ function onClickAddButton() {
   }
 }
 
+function validateForm() {
+  const url = $('#url').val();
+  const completed = $('#completed').is(':checked');
+  const title = $('#title').val();
+  const description = $('#description').val();
+  const brand = $('#brand').val();
+  const category = $('#category').val();
+  const images = $('#images').val();
+  const price = $('#price').val();
+  const oldPrice = $('#oldPrice').val();
+  const colors = $('#colors').val();
+  const sizes = $('#sizes').val();
+
+  if (!url.trim()) {
+    toastr.warning('URL is required!', 'Validation');
+    return true;
+  }
+  return {
+    url, completed, title, description, brand, category, images, price, oldPrice, colors, sizes,
+  };
+}
+
 function emptyForm() {
   $('#website-form').find("input[type=text], input[type=hidden], textarea").val("");
-  $('#site-id').val("-1");
+  $('#product-id').val("-1");
   $('#website-form button[type="submit"]').html('<i class="la la-plus"></i>Add');
   $('#form-wrapper').addClass('_hide').removeClass('_show');
+}
+
+
+
+// Utilities
+
+function shortenURL(url, length = 60) {
+  if (url.length <= 60) return url;
+  const half_len = Math.floor(length / 2);
+  return url.substring(0, half_len) + '...' + url.substring(url.length - 1 - half_len, url.length - 1);
 }
 
 

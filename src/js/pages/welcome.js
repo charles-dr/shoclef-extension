@@ -21,6 +21,6 @@ function syncDataFormat() {
 
 function moveToOptions() {
   setTimeout(function() {
-    chrome.tabs.create({ url: 'src/pages/websites.html' });
+    chrome.tabs.create({ url: 'src/pages/index.html' });
   }, 1000);
 }

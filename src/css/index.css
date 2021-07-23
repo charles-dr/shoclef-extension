@@ -1,0 +1,17 @@
+
+.information-box {
+  /* background-color: #efefef; */
+  margin-bottom: 1.5rem;
+}
+
+.information-box > .card {
+  padding: 1rem;
+}
+
+.information-box .info-text {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+
+}
