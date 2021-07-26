@@ -1,51 +1,85 @@
+const __RETURN = {
+  TEXT: 'innerText',
+  HTML: 'innerHTML',
+};
 class ShoclefScraper {
-  siteProfile = {};
-  constructor(siteProfile) {
-    console.log('[ShoclefScrper] initialized!', siteProfile);
-    this.siteProfile = siteProfile;
-    this.productInfo = {
-      title: '',
-      description: '',
-      brand: '',
-      images: [],
-    };
+  constructor(website, product) {
+    console.log('[ShoclefScrper] initialized!', website, product);
+    this.website = new Website(website);
+    this.product = new Product(product);
   }
 
-  initStat() {
-    console.log('[ShoclefScraper][InitStat] define the function!');
-    this.productInfo = {
-      title: '',
-      description: '',
-      brand: '',
-      images: [],
-    };
-  }
-
-  doScrap() {
+  async doScrap() {
     // collect data from page.
-    console.log('[ShoclefScraper][InitStat] defined the function!');
-    toastr.info('Scraping starting...');
+    console.log('[ShoclefScraper][doScrap] GO GO!');
+    toastr.info('Start scraping...');
+    await this.sleep(1000);
+    this.product.title = await this.findSingleValue(this.website.title, __RETURN.TEXT);
+    this.product.description = await this.findSingleValue(this.website.description, __RETURN.HTML);
+    this.product.brand = await this.findSingleValue(this.website.brand, __RETURN.TEXT);
+    this.product.category = await this.findSingleValue(this.website.category, __RETURN.TEXT);
+    this.product.price = await this.findSingleValue(this.website.price, __RETURN.TEXT);
+    this.product.oldPrice = await this.findSingleValue(this.website.oldPrice, __RETURN.TEXT);
+    this.product.sizes = await this.findMultipleValue(this.website.size, __RETURN.TEXT);
+
+
+    console.log('[Scrap][Test]', this.product.toObject())
+  }
+
+  async findSingleValue(selector, returnType , repeat = 0) {
+    const element = document.querySelectorAll(selector)[0];
+    if (element) {
+      console.log('[found element]', repeat);
+      toastr.success(`Found the element in ${repeat} repeat.`);
+      return element[returnType];
+    }
+    if (repeat > 10) {
+      toastr.error('Failed to find element', 'Shoclef Scraper');
+      return '';
+    }
+    await this.sleep(100);
+    return this.findSingleValue(selector, returnType, repeat + 1);
+  }
+
+  async findMultipleValue(selector, returnType , repeat = 0) {
+    const element = document.querySelectorAll(selector)[0];
+    if (element) {
+      console.log('[found element]', repeat);
+      toastr.success(`Found the element in ${repeat} repeat.`);
+      return element[returnType];
+    }
+    if (repeat > 10) {
+      toastr.error('Failed to find element', 'Shoclef Scraper');
+      return '';
+    }
+    await this.sleep(100);
+    return this.findSingleValue(selector, returnType, repeat + 1);
   }
 
   completeScraping() {
     // submit data to airtable or do something else.
   }
+
+  async sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, ms);      
+    });
+  }
 }
 
 $(function () {
   console.log("[Script][All] Loaded!", typeof fetchInfo);
-  window.addEventListener("keyup", doKeyPress, false); //add the keyboard handler
-
+  // window.addEventListener("keyup", doKeyPress, false); //add the keyboard handler
 
 });
 
 chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
-  console.log('[Message]', message, sender, sendResponse);
-  const { type, site } = message;
-  if (type === 'DO_SCRAPING' && site) {
-    // start scraping
-    console.log('[GO][DO_SCRAPING]');
-    startScraping(site);
+  const { type, site, product } = message;
+  if (type === _ACTION.START_SCRAP && site && product) {
+    const scraper = new ShoclefScraper(site, product);
+    scraper.doScrap();
   }
 });
 
@@ -53,11 +87,6 @@ chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
 // }
 
 trigger_key = 13; // enter key
-
-function startScraping(siteProfile) {
-  const scraper = new ShoclefScraper(siteProfile);
-  scraper.doScrap();
-}
 
 function doKeyPress(e) {
   if (e.ctrlKey && e.keyCode == trigger_key) {

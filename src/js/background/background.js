@@ -52,12 +52,15 @@ chrome.webNavigation.onCompleted.addListener(async ({ url, tabId, processId, fra
 
   const parsedURL = new URL(url);
   const host = parsedURL.host.replace('www.', '');
-  const isTarget = _sites.some((site) => site.domain.includes(host));
-  const [site] = _sites.filter(st => st.domain.includes(host));
+  // const isTarget = _sites.some((site) => site.domain.includes(host));
+  const sites = await _MEMORY.loadProfiles();
+  const products = await _MEMORY.loadProducts();
+  const [site] = sites.filter(st => st.domain.includes(host));
+  const [product] = products.filter(prod => prod.url === url);
 
   // if this tab is opened by background script, then start scraping.
   if (_tabs.includes(tabId)) {
-    chrome.tabs.sendMessage(tabId, { type: 'DO_SCRAPING', site });
+    chrome.tabs.sendMessage(tabId, { type: _ACTION.START_SCRAP, site, product });
     console.log('[Message] scrap~');
   }
 });
@@ -84,7 +87,8 @@ chrome.extension.onMessage.addListener(function (
         settings.scraping = true;
         return _MEMORY.storeSettings(settings);
       })
-      .then(settings => activity.fillEmptyTabs());
+      .then(settings => activity.fillEmptyTabs())
+      .then(() => sendResponse({ status: true }));
   }
 });
 

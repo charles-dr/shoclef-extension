@@ -60,3 +60,48 @@ class Product {
     };
   }
 }
+
+class Website {
+  domain = ''
+  title = ''
+  description = ''
+  image = ''
+  brand = ''
+  category = ''
+  price = ''
+  oldPrice = ''
+  color = ''
+  size = ''
+  active = ''
+  constructor({
+    domain, title, description, image, brand, category, price, oldPrice, color, size, active,
+  }) {
+    this.domain = domain;
+    this.title = title;
+    this.description = description;
+    this.image = image;
+    this.brand = brand;
+    this.category = category;
+    this.price = price;
+    this.oldPrice = oldPrice;
+    this.color = color;
+    this.size = size;
+    this.active = active;
+  }
+
+  toObject() {
+    return {
+      domain: this.domain,
+      title: this.title,
+      description: this.description,
+      image: this.image,
+      brand: this.brand,
+      category: this.category,
+      price: this.price,
+      oldPrice: this.oldPrice,
+      color: this.color,
+      size: this.size,
+      active: this.active,
+    };
+  }
+}
