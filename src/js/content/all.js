@@ -2,6 +2,7 @@ const __RETURN = {
   TEXT: 'innerText',
   HTML: 'innerHTML',
 };
+const N_REPEAT_UNTIL_FIND = 10;
 class ShoclefScraper {
   constructor(website, product) {
     console.log('[ShoclefScrper] initialized!', website, product);
@@ -22,7 +23,6 @@ class ShoclefScraper {
     this.product.oldPrice = await this.findSingleValue(this.website.oldPrice, __RETURN.TEXT);
     this.product.sizes = await this.findMultipleValue(this.website.size, __RETURN.TEXT);
 
-
     console.log('[Scrap][Test]', this.product.toObject())
   }
 
@@ -33,7 +33,7 @@ class ShoclefScraper {
       toastr.success(`Found the element in ${repeat} repeat.`);
       return element[returnType];
     }
-    if (repeat > 10) {
+    if (repeat > N_REPEAT_UNTIL_FIND) {
       toastr.error('Failed to find element', 'Shoclef Scraper');
       return '';
     }
@@ -42,18 +42,19 @@ class ShoclefScraper {
   }
 
   async findMultipleValue(selector, returnType , repeat = 0) {
-    const element = document.querySelectorAll(selector)[0];
-    if (element) {
+    const elements = document.querySelectorAll(selector);
+    if (elements && elements.length) {
       console.log('[found element]', repeat);
       toastr.success(`Found the element in ${repeat} repeat.`);
+
       return element[returnType];
     }
-    if (repeat > 10) {
+    if (repeat > N_REPEAT_UNTIL_FIND) {
       toastr.error('Failed to find element', 'Shoclef Scraper');
       return '';
     }
     await this.sleep(100);
-    return this.findSingleValue(selector, returnType, repeat + 1);
+    return this.findMultipleValue(selector, returnType, repeat + 1);
   }
 
   completeScraping() {
