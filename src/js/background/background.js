@@ -77,7 +77,7 @@ chrome.extension.onMessage.addListener(function (
   sendResponse
 ) {
   console.log('[Data] Requested', request)
-  const { type } = request;
+  const { type, ...payload } = request;
   // console.log('[message]', request, sender);
   if (type === "requestData") {
     sendResponse(appData);
@@ -85,6 +85,7 @@ chrome.extension.onMessage.addListener(function (
     return _MEMORY.loadSettings()
       .then(settings => {
         settings.scraping = true;
+        settings.max_tabs = payload.max_tabs;
         return _MEMORY.storeSettings(settings);
       })
       .then(settings => activity.fillEmptyTabs())
