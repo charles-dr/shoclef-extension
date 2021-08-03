@@ -119,6 +119,7 @@ class PM6Scraper extends ShoclefScraper {
     this.product.oldPrice = await this.getOldPrice();
     this.product.sizes = await this.getSizes();
     this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
 
     this.completeScraping();
   }
@@ -173,20 +174,20 @@ class PM6Scraper extends ShoclefScraper {
     const getImageOfSwatch= async () => {
       const thumbnails = document.querySelectorAll('#thumbnailsList img');
       const images = [];
-      thumbnails.forEach(async thumbnail => {
-        thumbnail.click();
-        await this.sleep(10);
-        images.push(document.querySelectorAll('#productImages .gB-z .qB-z img')[0].getAttribute('src'));
-      });
+      for (let i = 0; i < thumbnails.length; i++) {
+        thumbnails[i].click();
+        await this.sleep(50);
+        images.push(document.querySelectorAll('#productImages .gB-z .qB-z img')[0].getAttribute('src'));        
+      }
       return images;
     };
 
     if (swatches.length) {
-      swatches.forEach(async swatch => {
-        swatch.click();
-        this.sleep(300);
-        listOfImages.push(await getImageOfSwatch());
-      });
+      for (let i = 0; i < swatches.length; i++) {
+        swatches[i].click();
+        await this.sleep(100);
+        listOfImages.push(await getImageOfSwatch());        
+      }
     } else {
       listOfImages.push(await getImageOfSwatch());
     }
