@@ -9,7 +9,7 @@ class Product {
   category = '';
   colors = [];
   sizes = [];
-  variants = [];
+  variants = []; // Array<{ key: string, values: string[] }>
   completed = false;
   scraping = false;
   createdAt = null;
@@ -74,7 +74,7 @@ class Website {
   size = ''
   active = ''
   constructor({
-    domain, title, description, image, brand, category, price, oldPrice, color, size, active,
+    domain, title, description, image, brand, category, price, oldPrice, color, size, active, variants = '',
   }) {
     this.domain = domain;
     this.title = title;
@@ -86,6 +86,7 @@ class Website {
     this.oldPrice = oldPrice;
     this.color = color;
     this.size = size;
+    this.variants = variants;
     this.active = active;
   }
 
@@ -101,6 +102,7 @@ class Website {
       oldPrice: this.oldPrice,
       color: this.color,
       size: this.size,
+      variants: this.variants,
       active: this.active,
     };
   }
