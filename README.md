@@ -33,14 +33,16 @@ hakobpmphaleegackblhmmigplnlbndp
 ## Website List
 
 https://www.6pm.com
-https://www.accuweather.com
-https://www.amazon.com
-https://www.amazon.in
-https://www.asos.com
+#https://www.amazon.com
+#https://www.amazon.in
+#https://www.asos.com
+
+https://www.jcrew.com
 https://www.boozt.com
+
+https://www.accuweather.com
 https://www.ebay.com
 https://factory.jcrew.com
-https://www.jcrew.com
 https://www.madewell.com
 https://modesens.com
 https://www.neimanmarcus.com

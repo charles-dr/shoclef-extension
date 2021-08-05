@@ -269,7 +269,7 @@ class Amazoncraper extends ShoclefScraper {
       const categories = [];
       items.forEach(item => categories.push(item.innerText));
       toastr.success('Success', 'Category');
-      return categories.join(CONFIG.DELIMITER));
+      return categories.join(CONFIG.DELIMITER);
     } catch (e) {
       taostr.error('Failure', 'Category');
       return '';
@@ -353,11 +353,250 @@ class Amazoncraper extends ShoclefScraper {
   }
 }
 
+class AsosScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[Amazoncraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[Amazoncraper] starting...');
+    await this.sleep(1000);
+    this.product.title = await this.findSingleValue('#aside-content > .product-hero > h1', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('#product-details-container', __RETURN.HTML);
+    this.product.brand = await this.getBrand();
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.sizes = await this.getSizes();
+    this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('#product-details-container .product-description > p a:nth-child(2)')[0].innerText;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      return document.querySelectorAll('#product-details-container .product-description > p a:nth-child(1)')[0].innerText;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      return Number(document.querySelectorAll('[data-id=current-price]')[0].innerText.replace('$', '').replace('Now', ''));
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  async getOldPrice() {
+    const oldPrice = Number(document.querySelectorAll('[data-id=previous-price]')[0].innerText.replace('$', '').replace('Was', ''));
+    if (!oldPrice) {
+      return this.getPrice();
+    }
+    return oldPrice;
+  }
+
+  async getSizes() {
+    const sizes = [];
+    const options = document.querySelectorAll('[data-id=sizeSelect]:nth-child(1) option');
+    if (options.length) {
+      options.forEach((option, i) => {
+        if (i > 0) {
+          sizes.push(option.innerText.replace('- Not available', '').trim());
+        }
+      });
+    }
+
+    return sizes.join(CONFIG.DELIMITER);
+  }
+
+  async getColors() {
+    const colors = [];
+    try {
+      const targets = document.querySelectorAll('.colour-size.colour-component .colour-section .product-colour');
+      if (targets.length) {
+        colors.push(targets[0].innerText);
+      }
+    } catch (e) {}
+    return colors.join(CONFIG.DELIMITER);
+  }
+
+  async getImages() {
+    const images = [];
+    // click all thumbnails to add to the main container.
+    const thumbnails = document.querySelectorAll('.gallery-aside-wrapper .thumbnails .image-thumbnail img');
+    // thumbnails.forEach(async thumbnail => {
+    //   thumbnail.click();
+    //   await this.sleep(10);
+    // });
+    // now collect the images.
+    const targets = document.querySelectorAll('#product-gallery div.amp-page.amp-spin > div.amp-page.amp-images > div > div > img')
+    try {
+      targets.forEach(target => images.push(target.getAttribute('src')));
+    } catch (e) {
+      console.log('[GetImage]', e.message);
+    }
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i)
+      .join(CONFIG.DELIMITER);
+  }
+
+  async getVariants() {
+    const variants = [];
+    return variants;
+  }
+}
+
+class JcrewScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[JcrewScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[JcrewScraper] starting...');
+    await this.sleep(1000);
+    this.product.title = await this.findSingleValue('#product-name__p', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('#product-description', __RETURN.HTML);
+    this.product.brand = 'J.CREW';
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.sizes = await this.getSizes();
+    this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('#product-details-container .product-description > p a:nth-child(2)')[0].innerText;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      const url = new URL(location.href);
+      let tokens = url.pathname.trim().split('/');
+      tokens.splice(0, 3);
+      tokens.splice(tokens.length - 2, 2);
+      tokens.splice(1, 1);
+      return tokens.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const salePriceElement = document.querySelectorAll('[data-qaid=pdpProductPriceDiscount]')[0];
+      const oldPriceElement = document.querySelectorAll('[data-qaid=pdpProductPriceRegular]')[0];
+      if (salePriceElement) {
+        return Number(salePriceElement.innerText.replace(/\([^)]+\)/, '').replace('$', ''))
+      } else {
+        return Number(oldPriceElement.innerText.replace('$', ''));
+      }
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  async getOldPrice() {
+    return Number(document.querySelectorAll('[data-qaid=pdpProductPriceRegular]')[0].innerText.replace('$', ''));
+  }
+
+  async getSizes() {
+    const sizes = [];
+    const options = document.querySelectorAll('#c-product__sizes div.c-sizes-list .js-product__size');
+    if (options.length) {
+      options.forEach((option, i) => {
+        sizes.push(option.innerText.replace('- Not available', '').trim());
+      });
+    }
+    return sizes.join(CONFIG.DELIMITER);
+  }
+
+  async getColors() {
+    const colors = [];
+    try {
+      const targets = document.querySelectorAll('#c-product__price-colors div.product__group div.product__colors div.js-product__color');
+      if (targets.length) {
+        const formatColor = (color) => color.split(' ').map(word => word.charAt(0).toUpperCase() + word.substring(1, word.length).toLowerCase()).join(' ');
+        targets.forEach(target => {
+          colors.push(formatColor(target.getAttribute('data-name')));
+        })
+      }
+    } catch (e) {}
+    return colors.join(CONFIG.DELIMITER);
+  }
+
+  async getImages() {
+    const swatches = document.querySelectorAll('#c-product__price-colors div.product__group div.product__colors div.js-product__color');
+    const listOfImages = [];
+
+    const getImageOfSwatch= async () => {
+      const thumbnails = document.querySelectorAll('#c-product__photos ul img.product__image--thumbnail');
+      const images = [];
+      for (let i = 0; i < thumbnails.length; i++) {
+        thumbnails[i].click();
+        await this.sleep(50);
+        images.push(document.querySelectorAll('[data-qaid="pdpProductGalleryGalleryItemHeroImage"]')[0].getAttribute('src'));        
+      }
+      return images;
+    };
+
+    if (swatches.length) {
+      for (let i = 0; i < swatches.length; i++) {
+        swatches[i].click();
+        await this.sleep(100);
+        listOfImages.push(await getImageOfSwatch());        
+      }
+    } else {
+      listOfImages.push(await getImageOfSwatch());
+    }
+    return listOfImages.reduce((_imgs, list) => _imgs = _imgs.concat(list), []);
+  }
+
+  async getVariants() {
+    const variants = [];
+    const variantGroups = document.querySelectorAll('#c-product__variations .product__variations-list');
+    try {
+      variantGroups.forEach(async (variantElement) => {
+        const key = variantElement.querySelectorAll('.description-list .product__label')[0].innerText.replace(':', '').trim();
+        const items = variantElement.querySelectorAll('ul[data-qaid=pdpProductVariationsWrapper] li.js-product__variation');
+        const values = [];
+        items.forEach(item => values.push(item.innerText));
+        variants.push({ key, values });
+      });
+    } catch (e) {}
+    return variants;
+  }
+}
+
 
 
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
+  'amazon.in': Amazoncraper,
+  'asos.com': AsosScraper,
+  'jcrew.com': JcrewScraper,
 };
 
 $(function () {
@@ -382,6 +621,7 @@ function startScraping(product = null, site = {}) {
 
 function selectScraper(product, site) {
   const host = new URL(location.href).host.replace('www.', '');
+  console.log('[ShoclefScraper][Host]', host);
   const Scraper = mapHost2Scraper[host] !== undefined ? mapHost2Scraper[host] : ShoclefScraper;
   return new Scraper(product, site);
 }
