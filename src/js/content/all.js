@@ -752,7 +752,8 @@ function startScraping(product = null, site = {}) {
 function selectScraper(product, site) {
   const host = new URL(location.href).host.replace('www.', '');
   console.log('[ShoclefScraper][Host]', host);
-  const Scraper = mapHost2Scraper[host] !== undefined ? mapHost2Scraper[host] : ShoclefScraper;
+  const [mainHost] = Object.keys(mapHost2Scraper).filter(mh => host.includes(mh));
+  const Scraper = mainHost && mapHost2Scraper[mainHost] !== undefined ? mapHost2Scraper[mainHost] : ShoclefScraper;
   return new Scraper(product, site);
 }
 
