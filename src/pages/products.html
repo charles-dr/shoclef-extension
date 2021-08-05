@@ -33,7 +33,7 @@
                 <div class="m-portlet__head-caption">
                     <div class="m-portlet__head-title">
                         <h3 class="m-portlet__head-text">
-                            Websites
+                            Products
                         </h3>
                     </div>
                 </div>
@@ -60,36 +60,40 @@
                   <thead>
                   <tr>
                       <th>#</th>
-                      <th>Domain</th>
+                      <th style="max-width: 200px;">URL</th>
+                      <th>Title</th>
+                      <th>Description</th>
+                      <th>Brand</th>
+                      <th>Category</th>
+                      <th>Images</th>
                       <th>Created At</th>
                       <th>Updated At</th>
-                      <th>Active</th>
+                      <th>Scraping</th>
+                      <th>Status</th>
                       <th>Actions</th>
                   </tr>
                   </thead>
-                  <tbody>
-
-                  </tbody>
+                  <tbody></tbody>
               </table>
           </div>
 
             <div class="m-portlet__body _hide" id="form-wrapper" style="padding: 0;">
               <hr/>
               <form id="website-form" style="padding: 2.2rem 2.2rem;">
-                  <input type="hidden" id="site-id" name="id" value="-1"/>
+                  <input type="hidden" id="product-id" name="id" value="-1"/>
                   <div class="row">
                     <div class="col-sm-12 col-md-6">
                         <div class="form-group form-group-default">
-                            <label>Domain<span class="text-danger">*</span></label>
-                            <input class="form-control" type="text" id="domain" name="domain"
-                                    value="" placeholder="(www.)example.com" required/>
+                            <label>URL<span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" id="url" name="url"
+                                    value="" required/>
                         </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
-                        <label>Active</label>
+                        <label>Completed</label>
                         <span class="m-switch" style="display: block;">
                           <label>
-                            <input type="checkbox" class="form-control" id="active" name="active"/>
+                            <input type="checkbox" class="form-control" id="completed" name="completed"/>
                             <span></span>
                           </label>
                         </span>
@@ -98,16 +102,16 @@
                   <div class="row">
                       <div class="col-sm-12 col-md-6">
                           <div class="form-group form-group-default">
-                              <label>Title<span class="text-danger">*</span></label>
+                              <label>Title</label>
                               <input class="form-control" type="text" id="title" name="title"
-                                     value="" placeholder="Enter Selctor" required/>
+                                     value="" placeholder="Enter Title" />
                           </div>
                       </div>
                       <div class="col-sm-12 col-md-6">
                           <div class="form-group form-group-default">
-                              <label>Description<span class="text-danger">*</span></label>
-                              <input class="form-control" type="text" id="description" name="description"
-                                     value="" placeholder="Enter Selector" required/>
+                              <label>Description</label>
+                              <textarea class="form-control" type="text" id="description" name="description"
+                                     value="" placeholder="Enter Description" ></textarea>
                           </div>
                       </div>
                   </div>
@@ -116,27 +120,23 @@
                         <div class="form-group form-group-default">
                             <label>Brand</label>
                             <input class="form-control" type="text" id="brand" name="brand"
-                                   value="" placeholder="Enter Selector"/>
+                                   value="" placeholder="Enter Brand"/>
                         </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
                         <div class="form-group form-group-default">
                             <label>Category</label>
                             <input class="form-control" type="text" id="category" name="category"
-                                   value="" placeholder="Enter Selector"/>
+                                   value="" placeholder="Enter Category"/>
                         </div>
                     </div>
                   </div>
                   <div class="row">
                     <div class="col-sm-12 col-md-6">
                         <div class="form-group form-group-default">
-                            <label>Image</label>
-                            <input class="form-control" type="text" id="image" name="image"
-                                   value="" placeholder="Enter Selctor"/>
-                            <div>
-                              <input type="checkbox" />
-                              <label></label>
-                            </div>
+                            <label>Images</label>
+                            <input class="form-control" type="text" id="images" name="images"
+                                   value="" />
                         </div>
                     </div>
                   </div>
@@ -145,14 +145,14 @@
                       <div class="form-group form-group-default">
                           <label>Price</label>
                           <input class="form-control" type="text" id="price" name="price"
-                                value="" placeholder="Enter Selctor"/>
+                                value="" placeholder="Enter Price"/>
                       </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
                       <div class="form-group form-group-default">
                         <label>Old Price</label>
                         <input class="form-control" type="text" id="oldPrice" name="oldPrice"
-                                value="" placeholder="Enter Selector" />
+                                value="" placeholder="Enter Old Price" />
                       </div>
                     </div>
                   </div>
@@ -160,15 +160,23 @@
                     <div class="col-sm-12 col-md-6">
                         <div class="form-group form-group-default">
                             <label>Color</label>
-                            <input class="form-control" type="text" id="color" name="color"
-                                   value="" placeholder="Enter Selctor"/>
+                            <input class="form-control" type="text" id="colors" name="colors"
+                                   value="" placeholder="Red,Blue"/>
                         </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
                         <div class="form-group form-group-default">
                             <label>Size</label>
-                            <input class="form-control" type="text" id="size" name="size"
-                                   value="" placeholder="Enter Selector"/>
+                            <input class="form-control" type="text" id="sizes" name="sizes"
+                                   value="" placeholder="XL,XXL"/>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-sm-12 col-md-6">
+                        <div class="form-group form-group-default">
+                            <input class="" type="checkbox" id="scraping" name="scraping" disabled/>
+                            <label for="scraping">Under Scraping Now</label>
                         </div>
                     </div>
                   </div>
@@ -191,6 +199,6 @@
     <script src="./../theme/datatables.bundle.js"></script>
     <!-- <script src="./../plugins/jquery.js"></script> -->
     <script src="./../js/basics/classes.js"></script>
-    <script src="./../js/pages/websites.js"></script>
+    <script src="./../js/pages/products.js"></script>
   </body>
 </html>

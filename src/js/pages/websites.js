@@ -15,6 +15,7 @@ $(function() {
       description: $('#description').val(),
       image: $('#image').val(),
       brand: $('#brand').val(),
+      category: $("#category").val(),
       price: $('#price').val(),
       oldPrice: $('#oldPrice').val(),
       color: $('#color').val(),
@@ -226,6 +227,7 @@ function onEdit(domain) {
   $('#description').val(site.description);
   $('#image').val(site.image);
   $('#brand').val(site.brand);
+  $('#category').val(site.category);
   $('#price').val(site.price);
   $('#oldPrice').val(site.oldPrice);
   $('#color').val(site.color);
