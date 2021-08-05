@@ -4,6 +4,7 @@ class Product {
   description = '';
   price = 0;
   oldPrice = '';
+  currency = 'USD'
   images = [];
   brand = '';
   category = '';
@@ -47,6 +48,7 @@ class Product {
       description: this.description,
       price: this.price,
       oldPrice: this.oldPrice,
+      currency: this.currency,
       images: this.images,
       brand: this.brand,
       category: this.category,
