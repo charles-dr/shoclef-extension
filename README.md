@@ -38,17 +38,20 @@ https://www.6pm.com
 #https://www.asos.com
 
 https://www.jcrew.com
-https://www.boozt.com
-
-https://www.accuweather.com
-https://www.ebay.com
 https://factory.jcrew.com
+https://www.boozt.com
 https://www.madewell.com
+
+
+
+https://poshmark.com
+https://www.ebay.com
+https://www.accuweather.com
 https://modesens.com
 https://www.neimanmarcus.com
 https://www.nordstrom.com
+https://www.nordstromrack.com
 https://www.pinterest.cl
-https://poshmark.com
 https://www.refinery29.com
 https://www.sears.com
 https://www.shopbop.com

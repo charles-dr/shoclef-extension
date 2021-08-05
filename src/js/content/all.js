@@ -6,6 +6,19 @@ const CONFIG = {
   DELIMITER: '::',
   N_REPEAT_UNTIL_FIND: 10,
 };
+const CURRENCY = {
+  "$": "USD",
+  "¥": "JPY",
+  "£": "EUR",
+  "£": "GBP",
+  "lei": "RON",
+  "kr": "SEK",
+  "₺": "TRY",
+  "₴": "UAH",
+  "zł": "PLN",
+  "₹": "INR",
+  "元": "CNY",
+};
 
 
 
@@ -720,6 +733,121 @@ class BooztScraper extends ShoclefScraper {
   }
 }
 
+class MadeWellScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[BooztScraper] initialized!', product, website);
+    super(product, website);
+    this.getColors = this.getColors.bind(this);
+  }
+
+  async doScrap() {
+    console.log('[BooztScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "EUR";
+    this.product.title = await this.findSingleValue('#pdpMain .product-main-content .product-name', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('.product-accordion .a11yAccordionHideArea', __RETURN.HTML);
+    this.product.brand = 'Madewell'
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.sizes = await this.getSizes();
+    this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getCategory() {
+    try {
+      const anchors = document.querySelectorAll('.breadcrumb.pdp-breadcrumbs li.breadcrumb-cat');
+      const categories = [];
+      anchors.forEach(anchor => {
+        categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const str_price = (await this.findSingleValue('.product-usd .product-price .price-sales', __RETURN.TEXT)).replace('Sale Price', '');
+      const NUMERIC_REGEXP = /[-]{0,1}[\d]*(,)*[\d]*[.]{0,1}[\d]+/g;
+      const COMMA_REGEXP = /,/g
+      const p_num = str_price.match(NUMERIC_REGEXP)[0];
+      const p_currency = str_price.replace(p_num, '').trim();
+      console.log('[Price]', p_num, p_currency, str_price, CURRENCY[p_currency]);
+      this.product.currency = CURRENCY[p_currency];
+      return Number(p_num.replace(COMMA_REGEXP, ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      return 0;
+    }
+  }
+
+  async getOldPrice() {
+    return 0;
+  }
+
+  async getSizes() {
+    const sizes = [];
+    const options = document.querySelectorAll('.swatches.size li');
+    if (options.length) {
+      options.forEach((option, i) => {
+        sizes.push(option.innerText.split('\n')[0].trim());
+      });
+    }
+    return sizes.join(CONFIG.DELIMITER);
+  }
+
+  async getColors() {
+    const colors = [];
+    const formatColor = (color) => color.split(' ').map(word => word.charAt(0).toUpperCase() + word.substring(1, word.length).toLowerCase()).join(' ');
+    try {
+      const targets = document.querySelectorAll('ul.swatches.color > li > a');
+      if (targets.length) {
+        targets.forEach(target => {
+          colors.push(
+            formatColor(
+              target
+                .getAttribute('title')
+                .replace('Select Color:', '')
+                .trim()
+            )
+          );
+        });
+      }
+    } catch (e) {
+      console.log('[Colors]', e);
+    }
+    return colors;
+  }
+
+  async getImages() {
+    const swatches = document.querySelectorAll('ul.swatches.color > li > a');
+    const listOfImages = [];
+
+    const getImageOfSwatch= async () => {
+      const thumbnails = document.querySelectorAll('#pdpMain .product-images-wrapper .product-images .product-images-desktop .product-images-desktop__column .product-image-wrapper img');
+      const images = [];
+      for (let i = 0; i < thumbnails.length; i++) {
+        images.push(thumbnails[i].getAttribute('src'));
+      }
+      return images;
+    };
+    listOfImages.push(await getImageOfSwatch());
+    return listOfImages
+      .reduce((_imgs, list) => _imgs = _imgs.concat(list), [])
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -727,6 +855,7 @@ const mapHost2Scraper = {
   'asos.com': AsosScraper,
   'jcrew.com': JcrewScraper,
   'boozt.com': BooztScraper,
+  'madewell.com': MadeWellScraper,
 };
 
 $(function () {
