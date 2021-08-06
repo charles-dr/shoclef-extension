@@ -44,13 +44,14 @@ https://www.madewell.com
 
 
 
+https://www.nordstrom.com
+https://www.nordstromrack.com
 https://poshmark.com
 https://www.ebay.com
+
 https://www.accuweather.com
 https://modesens.com
 https://www.neimanmarcus.com
-https://www.nordstrom.com
-https://www.nordstromrack.com
 https://www.pinterest.cl
 https://www.refinery29.com
 https://www.sears.com

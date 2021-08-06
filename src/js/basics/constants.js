@@ -9,6 +9,13 @@ const _STORE_KEY = {
   WEBSITES: 'websites',
   PRODUCTS: 'products',
   SETTINGS: 'settings',
+  BASES: 'bases',
+};
+
+const _BASE_STATUS = {
+  NONE: 'NONE',
+  RUNNING: 'RUNNING',
+  FINISHED: 'FINISHED',
 };
 
 const _MEMORY = {

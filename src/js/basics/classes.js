@@ -109,3 +109,66 @@ class Website {
     };
   }
 }
+
+
+
+class AirtalbeBase {
+  id = '';
+  name = '';
+  status = 'NONE';
+
+  constructor({ id, name, status = 'NONE' }) {
+    this.id = id;
+    this.name = name;
+    this.status = status;
+  }
+
+  toObject() {
+    return {
+      id: this.id,
+      name: this.name,
+      status: this.status,
+    };
+  }
+}
+
+class AirtableConfig {
+  api_key = '';
+  bases = []
+  constructor({ api_key = '', bases = [] }) {
+    this.api_key = api_key;
+    this.bases = bases;
+  }
+
+  addBase(baseId) {
+    this.bases.push(baseId);
+    return this.bases;
+  }
+
+  toObject() {
+    return {
+      api_key: this.api_key,
+      bases: this.bases,
+    };
+  }
+}
+
+class AppConfig {
+  scraping = false;
+  maxTabs = 3;
+  airtable = new AirtableConfig();
+
+  constructor({ scraping = false, maxTabs = 3, airtable = {} }) {
+    this.scraping = scraping;
+    this.maxTabs = maxTabs;
+    this.airtable = new AirtableConfig(airtable);
+  }
+
+  toObject() {
+    return {
+      scraping: this.scraping,
+      maxTabs: this.maxTabs,
+      airtable: this.airtable.toObject(),
+    };
+  }
+}

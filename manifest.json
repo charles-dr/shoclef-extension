@@ -29,6 +29,8 @@
   "background": {
     "scripts": [
       "src/js/basics/constants.js",
+      "src/js/basics/classes.js",
+      "src/plugins/airtable.js",
       "src/js/background/background.js"
     ],
     "persistent": true

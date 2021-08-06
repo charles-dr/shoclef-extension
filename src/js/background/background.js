@@ -4,71 +4,114 @@ var appData;
 
 const activity = {
   initializeSetting: async () => {
-    return _MEMORY.loadSettings()
-      .then(settings => {
-        const max_tabs = settings.max_tabs || 3;
-        settings = { ...settings, scraping: false, max_tabs };
-        return _MEMORY.storeSettings(settings);
-      });
+    return _MEMORY.loadSettings().then((settings) => {
+      console.log('[settings]', settings);
+      const max_tabs = settings.max_tabs || 3;
+      settings = { ...settings, scraping: false, max_tabs };
+      return _MEMORY.storeSettings(settings);
+    });
   },
   openNewTab: (url = null) => {
     url = url || "https://google.com";
     return new Promise((resolve, reject) => {
-      const tab = chrome.tabs.create({ url }, (tab => {
-        console.log('[Tab created] callback', tab)
+      const tab = chrome.tabs.create({ url }, (tab) => {
+        console.log("[Tab created] callback", tab);
         _tabs.push(tab.id);
         resolve(tab.id);
-      }));
+      });
     });
   },
   closeTabs: async (ids) => {
     return chrome.tabs.remove(ids);
   },
   selectCandidateProducts: (num) => {
-    return _MEMORY.loadProducts()
-      .then(products => products.filter(product => !product.scraping && !product.completed))
+    return _MEMORY
+      .loadProducts()
+      .then((products) =>
+        products.filter((product) => !product.scraping && !product.completed)
+      )
       .then((products) => products.slice(0, num));
   },
   fillEmptyTabs: () => {
-    return _MEMORY.loadSettings()
-      .then(settings => {
-        if (!settings.scraping) throw new Error('Scraping is inactive!');
-        if (_tabs.length >= settings.max_tabs) throw new Error('Already running max tabs!');
-        return activity.selectCandidateProducts(settings.max_tabs - _tabs.length);
+    return _MEMORY
+      .loadSettings()
+      .then((settings) => {
+        if (!settings.scraping) throw new Error("Scraping is inactive!");
+        if (_tabs.length >= settings.max_tabs)
+          throw new Error("Already running max tabs!");
+        return activity.selectCandidateProducts(
+          settings.max_tabs - _tabs.length
+        );
       })
-      .then((products) => Promise.all(products.map(product => activity.openNewTab(product.url))))
-      .catch(error => {
+      .then((products) =>
+        Promise.all(products.map((product) => activity.openNewTab(product.url)))
+      )
+      .catch((error) => {
         console.log(`[Fill Empty Tabs] Error: ${error.message}`);
       });
   },
-};
+  DB_totalCount: (baseId, filter = '') => {
+    var Airtable = require("airtable");
+    var base = new Airtable({ apiKey: "key7O52RsgH6Nxxuv" }).base('app3TPgrNQ8MAaMYI');
+    return new Promise((resolve, reject) => {
+      let total = 0;
 
+      base("Products").select({
+          fields: ["Product Title"],
+          maxRecords: 5000,
+          pageSize: 2,
+          view: "All Product",
+          // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
+          filterByFormula: filter,
+        })
+        .eachPage(
+          function page(records, fetchNextPage) {
+            total += records.length;
+            fetchNextPage();
+          },
+          function done(err) {
+            if (err) {
+              console.error(err);
+              reject(err);
+            }
+            resolve(total);
+          }
+        );
+    });
+  },
+};
 
 onBackgroundScriptLoaded();
 
 // tab opened completely
-chrome.webNavigation.onCompleted.addListener(async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
-  console.log('[Tab Loaded]', url, tabId, _tabs);
+chrome.webNavigation.onCompleted.addListener(
+  async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
+    console.log("[Tab Loaded]", url, tabId, _tabs);
 
-  const parsedURL = new URL(url);
-  const host = parsedURL.host.replace('www.', '');
-  // const isTarget = _sites.some((site) => site.domain.includes(host));
-  const sites = await _MEMORY.loadProfiles();
-  const products = await _MEMORY.loadProducts();
-  const [site] = sites.filter(st => st.domain.includes(host));
-  const [product] = products.filter(prod => prod.url === url);
+    const parsedURL = new URL(url);
+    const host = parsedURL.host.replace("www.", "");
+    // const isTarget = _sites.some((site) => site.domain.includes(host));
+    const sites = await _MEMORY.loadProfiles();
+    const products = await _MEMORY.loadProducts();
+    const [site] = sites.filter((st) => st.domain.includes(host));
+    const [product] = products.filter((prod) => prod.url === url);
 
-  // if this tab is opened by background script, then start scraping.
-  if (_tabs.includes(tabId)) {
-    chrome.tabs.sendMessage(tabId, { type: _ACTION.START_SCRAP, site, product });
-    console.log('[Message] scrap~');
+    // if this tab is opened by background script, then start scraping.
+    if (_tabs.includes(tabId)) {
+      chrome.tabs.sendMessage(tabId, {
+        type: _ACTION.START_SCRAP,
+        site,
+        product,
+      });
+      console.log("[Message] scrap~");
+    }
   }
-});
+);
 
 // listen to closing tabs
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
   _tabs.splice(_tabs.indexOf(tabId), 1);
-  console.log('[Tab Closed]', tabId, removeInfo, _tabs);
+  console.log("[Tab Closed]", tabId, removeInfo, _tabs);
 });
 
 chrome.extension.onMessage.addListener(function (
@@ -76,63 +119,105 @@ chrome.extension.onMessage.addListener(function (
   sender,
   sendResponse
 ) {
-  console.log('[Data] Requested', request)
+  console.log("[Data] Requested", request);
   const { type, ...payload } = request;
   // console.log('[message]', request, sender);
   if (type === "requestData") {
     sendResponse(appData);
   } else if (type === _ACTION.START_SCRAP) {
-    return _MEMORY.loadSettings()
-      .then(settings => {
+    return _MEMORY
+      .loadSettings()
+      .then((settings) => {
         settings.scraping = true;
         settings.max_tabs = payload.max_tabs;
         return _MEMORY.storeSettings(settings);
       })
-      .then(settings => activity.fillEmptyTabs())
+      .then((settings) => activity.fillEmptyTabs())
       .then(() => sendResponse({ status: true }));
   }
 });
 
 chrome.storage.onChanged.addListener(function (changes, namespace) {
-  // const { newValue } = changes.data; //oldValue, 
+  // const { newValue } = changes.data; //oldValue,
   // console.log('[Data][Updated]', newValue);
   // appData = newValue;
 });
 
 async function onBackgroundScriptLoaded() {
-  console.log('[Background] Loaded');
+  console.log("[Background] Loaded");
   await activity.initializeSetting();
-  
+
   loadData();
   // setInterval(openNewTab, 5000);
 
   loadSiteProfiles().then((sites) => {
     _sites = sites;
   });
+
+  // Airtable test
+  var Airtable = require("airtable");
+  var base = new Airtable({ apiKey: "key7O52RsgH6Nxxuv" }).base(
+    "app5N5EMi6RQNMAvh"
+  );
+  // base('Products').find('rectNtnIndBYEghXH', function(err, record) {
+  //   if (err) { console.error(err); return; }
+  //   console.log('Retrieved', record.id);
+  // });
+
+  // base('Products').select({
+  //   // Selecting the first 3 records in All Product:
+  //   fields: ['Product Title'],
+  //   maxRecords: 5000,
+  //   pageSize: 2,
+  //   view: "All Product",
+  //   // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
+  //   filterByFormula: "AND(NOT({Product Title} = ''))",
+  // }).eachPage(function page(records, fetchNextPage) {
+  //     // This function (`page`) will get called for each page of records.
+  //     console.log('[Page]');
+  //     records.forEach(function(record) {
+  //         console.log('Retrieved', record.get('Product Title'), record.get('Published'));
+  //     });
+
+  //     // To fetch the next page of records, call `fetchNextPage`.
+  //     // If there are more records, `page` will get called again.
+  //     // If there are no more records, `done` will get called.
+  //     fetchNextPage();
+
+  // }, function done(err) {
+  //   console.log('[Done]');
+  //     if (err) { console.error(err); return; }
+  // });
+
+  const total = await activity.DB_totalCount('app-7TPgrNQ8MAaMYI');
+  console.log("[Total]", total);
 }
 
 function loadData() {
-  chrome.storage.local.get(['data'], function (store = {}) {
+  chrome.storage.local.get(["data"], function (store = {}) {
     const { data } = store;
     appData = data;
-    console.log('[Cache][Data]', appData);
+    console.log("[Cache][Data]", appData);
   });
 }
 
 function openNewTab(url = null) {
   url = url || "https://google.com";
-  const tab = chrome.tabs.create({ url }, (tab => {
-    console.log('[Tab created] callback', tab)
+  const tab = chrome.tabs.create({ url }, (tab) => {
+    console.log("[Tab created] callback", tab);
     _tabs.push(tab.id);
-  }));
+  });
 }
 
 function loadSiteProfiles() {
   return new Promise((resolve, reject) => {
     try {
-      chrome.storage.local.get(["websites", "websites1"], function (store = {}) {
-        resolve(store.websites || []);      
-      });
+      chrome.storage.local.get(
+        ["websites", "websites1"],
+        function (store = {}) {
+          resolve(store.websites || []);
+        }
+      );
     } catch (e) {
       reject(e);
     }

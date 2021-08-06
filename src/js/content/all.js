@@ -98,7 +98,8 @@ class ShoclefScraper {
   }
 
   async getImages() {
-    console.warn('[getImages] define the function');
+    console.log('[getImages] define the function');
+    return [];
   }  
   
   async getVariants() {
@@ -778,7 +779,6 @@ class MadeWellScraper extends ShoclefScraper {
       const COMMA_REGEXP = /,/g
       const p_num = str_price.match(NUMERIC_REGEXP)[0];
       const p_currency = str_price.replace(p_num, '').trim();
-      console.log('[Price]', p_num, p_currency, str_price, CURRENCY[p_currency]);
       this.product.currency = CURRENCY[p_currency];
       return Number(p_num.replace(COMMA_REGEXP, ''));
     } catch (e) {
