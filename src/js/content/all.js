@@ -154,11 +154,16 @@ class PM6Scraper extends ShoclefScraper {
   }
 
   async getPrice() {
-    return Number(document.querySelectorAll('.Up-z .Vy-z .Xy-z')[0].innerText.replace('$', ''));
+    return Number(document.querySelectorAll('#productRecap > div > div:nth-child(2) > div > div:nth-child(2) > div > div:nth-child(2) > span[aria-label]')[0].innerText.replace('$', ''));
   }
 
   async getOldPrice() {
-    return Number(document.querySelectorAll('.Up-z .Vy-z .gz-z')[0].innerText.replace('$', ''));
+    return Number(
+      document.querySelectorAll('#productRecap > div > div:nth-child(2) > div > div:nth-child(2) > div > div:nth-child(2) > span:not([aria-label])')[0]
+        .innerText
+        .replace('$', '')
+        .replace('MSRP:', '')
+    );
   }
 
   async getSizes() {
@@ -197,7 +202,7 @@ class PM6Scraper extends ShoclefScraper {
       for (let i = 0; i < thumbnails.length; i++) {
         thumbnails[i].click();
         await this.sleep(50);
-        images.push(document.querySelectorAll('#productImages .gB-z .qB-z img')[0].getAttribute('src'));        
+        images.push(document.querySelectorAll('#productImages button[aria-label="Zoom into product image"] img')[0].getAttribute('src'));        
       }
       return images;
     };
