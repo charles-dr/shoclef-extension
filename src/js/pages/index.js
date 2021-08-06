@@ -1,14 +1,53 @@
 
 $(function() {
+  fillStartScrapForm();
+  addEventListeners();
   $('#toggle-scrap-form').on('submit', function(e) {
     e.preventDefault();
+    if (!confirm('Are you sure to start scraping?')) return;
+    const data = validateStartAction();
     console.log('[Toggle Scraping]');
     chrome.extension.sendMessage({
       type: _ACTION.START_SCRAP,
-      max_tabs: $('#max-tabs').val(),
+      ...data,
     });
   });
 });
+
+function addEventListeners() {
+  chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
+    const { type, ...payload } = message;
+    console.log('[Message From BG]', message);
+  });
+}
+
+function fillStartScrapForm() {
+  return _MEMORY.loadSettings()
+    .then(settings => {
+      const iSettings = new AppConfig(settings);
+      $('#max-tabs').val(iSettings.maxTabs);
+      $('#base-id').val(iSettings.airtable.currentBase);
+    })
+    .catch(error => {
+      console.log('[settings] error: ', error);
+      toastr.error('Error while loading settings!', 'Setting');
+    });
+}
+
+function validateStartAction() {
+  const baseId = $('#base-id').val();
+  const maxTabs = $('#max-tabs').val();
+  let valid = true;
+  if (!baseId) {
+    valid = false;
+    toastr.error('Please enter Airtable base ID!');
+  }
+  if (!maxTabs) {
+    valid = false;
+    toastr.error('Please enter the max tabs to open!');
+  }
+  return valid ? { baseId, maxTabs } : false;
+}
 
 function startSraping() {
 

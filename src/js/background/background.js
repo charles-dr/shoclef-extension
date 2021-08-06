@@ -1,14 +1,19 @@
+const AIRTABLE_API_KEY = 'key7O52RsgH6Nxxuv';
+const EXTENSION_ID = 'hakobpmphaleegackblhmmigplnlbndp';
 var _tabs = [];
 var _sites = [];
 var appData;
+var Airtable = require("airtable");
 
 const activity = {
   initializeSetting: async () => {
     return _MEMORY.loadSettings().then((settings) => {
-      console.log('[settings]', settings);
-      const max_tabs = settings.max_tabs || 3;
-      settings = { ...settings, scraping: false, max_tabs };
-      return _MEMORY.storeSettings(settings);
+      const iSettings = new AppConfig(settings);
+      iSettings.maxTabs = iSettings.maxTabs || 5;
+      iSettings.airtable.apiKey = iSettings.airtable.apiKey || AIRTABLE_API_KEY;
+      iSettings.scraping = iSettings.scraping || false;
+      console.log('[settings]', settings, iSettings);
+      return _MEMORY.storeSettings(iSettings.toObject());
     });
   },
   openNewTab: (url = null) => {
@@ -24,6 +29,24 @@ const activity = {
   closeTabs: async (ids) => {
     return chrome.tabs.remove(ids);
   },
+  getAllTabs: async () => {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.tabs.query({}, tabs => {
+          resolve(tabs);
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  },
+  getExtensionTabs: async () => {
+    return activity.getAllTabs()
+      .then(tabs => tabs.filter(tab => tab.url.includes(EXTENSION_ID)));
+  },
+  sendDataToTab: async (tabId, data) => {
+    return chrome.tabs.sendMessage(tabId, data);
+  },
   selectCandidateProducts: (num) => {
     return _MEMORY
       .loadProducts()
@@ -36,12 +59,11 @@ const activity = {
     return _MEMORY
       .loadSettings()
       .then((settings) => {
-        if (!settings.scraping) throw new Error("Scraping is inactive!");
-        if (_tabs.length >= settings.max_tabs)
+        const iSettings = new AppConfig(settings);
+        // if (!settings.scraping) throw new Error("Scraping is inactive!");
+        if (_tabs.length >= iSettings.maxTabs)
           throw new Error("Already running max tabs!");
-        return activity.selectCandidateProducts(
-          settings.max_tabs - _tabs.length
-        );
+        return activity.selectCandidateProducts(iSettings.maxTabs - _tabs.length);
       })
       .then((products) =>
         Promise.all(products.map((product) => activity.openNewTab(product.url)))
@@ -50,15 +72,71 @@ const activity = {
         console.log(`[Fill Empty Tabs] Error: ${error.message}`);
       });
   },
-  DB_totalCount: (baseId, filter = '') => {
+  // UI
+  onStartScrapRequest: (payload) => {
+    /**
+     * 1. load settings. update & save settings
+     * 2. Airtable. total count, unscraped products. store to memory with scraped status 0.
+     * 3. run tab manager. send message to UI
+     */
+    const { maxTabs, baseId } = payload;
+    let _settings = {};
+    
+    return _MEMORY.loadSettings()
+      .then(settings => {
+        const iSettings = new AppConfig(settings);
+        iSettings.maxTabs = maxTabs;
+        iSettings.airtable.currentBase = baseId;
+        return _MEMORY.storeSettings(iSettings.toObject());
+      })
+      .then(settings => {
+        _settings = settings;
+        const iSettings = new AppConfig(_settings);
+        return Promise.all([
+          activity.DB_loadProducts({
+            apiKey: iSettings.airtable.apiKey,
+            baseId: iSettings.airtable.currentBase,
+            filter:"AND(NOT({URL to Competitor's Product} = '', {Scraped Completed from URL} = 0))",
+          }),
+          _MEMORY.loadProducts(),
+        ]);
+      })
+      .then(([aProducts, sProducts]) => {
+        console.log(`[Airtable] loaded ${aProducts.length} products!`);
+        aProducts.forEach(aProduct => {
+          // identify the product with url.
+          const idx = sProducts.map(p => p.url.trim()).indexOf(aProduct.url);
+          if (idx > -1) {
+            sProducts[idx] = { ...sProducts[idx], ...aProduct };
+          } else {
+            sProducts.push(aProduct);
+          }
+        });
+        return _MEMORY.storeProducts(sProducts);
+      })
+      .then(async sProducts => {
+        const tabs = await activity.getExtensionTabs();
+
+        console.log('[tabs]', tabs);
+        tabs.forEach(tab => activity.sendDataToTab(tab.id, { status: 'TEST' }));
+        return activity.fillEmptyTabs();
+      })
+      .catch(error => {
+        console.log('[onStartScrapRequest]', error);
+      });
+
+  },
+
+  // Airtable Operations.
+  DB_totalCount: ({ apiKey, baseId, filter = ''}) => {
     var Airtable = require("airtable");
-    var base = new Airtable({ apiKey: "key7O52RsgH6Nxxuv" }).base('app3TPgrNQ8MAaMYI');
+    var base = new Airtable({ apiKey }).base(baseId);
     return new Promise((resolve, reject) => {
       let total = 0;
 
       base("Products").select({
           fields: ["Product Title"],
-          maxRecords: 5000,
+          maxRecords: 50000,
           pageSize: 2,
           view: "All Product",
           // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
@@ -66,6 +144,9 @@ const activity = {
         })
         .eachPage(
           function page(records, fetchNextPage) {
+            // records.forEach(record => {
+            //   console.log('[Record]', record.get('Product Title'), record)
+            // })
             total += records.length;
             fetchNextPage();
           },
@@ -77,6 +158,63 @@ const activity = {
             resolve(total);
           }
         );
+    });
+  },
+  DB_loadProducts: ({ apiKey, baseId, filter }) => {
+    var base = new Airtable({ apiKey }).base(baseId);
+    return new Promise((resolve, reject) => {
+      let total = 0;
+      const products = [];
+      base("Products").select({
+          // fields: ["Product Title"],
+          maxRecords: 5000,
+          pageSize: 100,
+          view: "All Product",
+          // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
+          filterByFormula: filter,
+        })
+        .eachPage(
+          function page(records, fetchNextPage) {
+            records.forEach(record => {
+              console.log('[Record]', record.id);
+              const iProduct = new Product({
+                title: record.get('Product Title'),
+                url: record.get("URL to Competitor's Product").trim(),
+                baseId,
+                recordId: record.id,
+              });
+              products.push(iProduct.toObject());
+            })
+            fetchNextPage();
+          },
+          function done(err) {
+            if (err) {
+              console.error(err);
+              reject(err);
+            }
+            resolve(products);
+          }
+        );
+    });
+  },
+  DB_updateRecords: ({ apiKey, baseId, filter }) => {
+    let base;
+    base('Products').update([
+      {
+        "id": "recEnokgfENWLJ3Se",
+        "fields": {
+          "Product Title": "Fork Set !",
+          "ahref to original product": "https://www.saksoff5th.com/product/mah-gender-neutral-pride-flag-canvas-sneakers-0400014188504.html?dwvar_0400014188504_color=WHITE_RAINBOW"
+        }
+      }
+    ], function(err, records) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      records.forEach(function(record) {
+        console.log(record.get('Option1 Name'));
+      });
     });
   },
 };
@@ -125,15 +263,16 @@ chrome.extension.onMessage.addListener(function (
   if (type === "requestData") {
     sendResponse(appData);
   } else if (type === _ACTION.START_SCRAP) {
-    return _MEMORY
-      .loadSettings()
-      .then((settings) => {
-        settings.scraping = true;
-        settings.max_tabs = payload.max_tabs;
-        return _MEMORY.storeSettings(settings);
-      })
-      .then((settings) => activity.fillEmptyTabs())
-      .then(() => sendResponse({ status: true }));
+    activity.onStartScrapRequest(payload);
+    // return _MEMORY
+    //   .loadSettings()
+    //   .then((settings) => {
+    //     settings.scraping = true;
+    //     settings.max_tabs = payload.max_tabs;
+    //     return _MEMORY.storeSettings(settings);
+    //   })
+    //   .then((settings) => activity.fillEmptyTabs())
+    //   .then(() => sendResponse({ status: true }));
   }
 });
 
@@ -156,8 +295,8 @@ async function onBackgroundScriptLoaded() {
 
   // Airtable test
   var Airtable = require("airtable");
-  var base = new Airtable({ apiKey: "key7O52RsgH6Nxxuv" }).base(
-    "app5N5EMi6RQNMAvh"
+  var base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(
+    "app3TPgrNQ8MAaMYI"
   );
   // base('Products').find('rectNtnIndBYEghXH', function(err, record) {
   //   if (err) { console.error(err); return; }
@@ -189,7 +328,11 @@ async function onBackgroundScriptLoaded() {
   //     if (err) { console.error(err); return; }
   // });
 
-  const total = await activity.DB_totalCount('app-7TPgrNQ8MAaMYI');
+  const total = await activity.DB_totalCount({
+    apiKey: AIRTABLE_API_KEY,
+    baseId: 'app3TPgrNQ8MAaMYI',
+  });
+
   console.log("[Total]", total);
 }
 

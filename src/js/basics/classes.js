@@ -1,5 +1,7 @@
 class Product {
   url = '';
+  baseId = '';
+  recordId = '';
   title = '';
   description = '';
   price = 0;
@@ -19,7 +21,7 @@ class Product {
   constructor({
     url, title, description, price, oldPrice, brand, category,
     images = [], colors = [], sizes = [], variants = [], completed = false, scraping = false,
-    createdAt = null, updatedAt = null,
+    createdAt = null, updatedAt = null, baseId = '', recordId = '',
   }) {
     if (!url) {
       throw new Error('Product must have valid URL!');
@@ -37,6 +39,8 @@ class Product {
     if (variants.length) this.variants = variants;
     this.completed = completed;
     this.scraping = scraping;
+    this.baseId = baseId;
+    this.recordId = recordId;
     this.createdAt = createdAt || Date.now();
     this.updatedAt = updatedAt || Date.now();
   }
@@ -44,6 +48,8 @@ class Product {
   toObject() {
     return {
       url: this.url,
+      baseId: this.baseId,
+      recordId: this.recordId,
       title: this.title,
       description: this.description,
       price: this.price,
@@ -111,7 +117,6 @@ class Website {
 }
 
 
-
 class AirtalbeBase {
   id = '';
   name = '';
@@ -133,11 +138,13 @@ class AirtalbeBase {
 }
 
 class AirtableConfig {
-  api_key = '';
+  apiKey = '';
   bases = []
-  constructor({ api_key = '', bases = [] }) {
-    this.api_key = api_key;
+  currentBase = '';
+  constructor({ apiKey = '', bases = [], currentBase = '' }) {
+    this.apiKey = apiKey;
     this.bases = bases;
+    this.currentBase = currentBase;
   }
 
   addBase(baseId) {
@@ -145,10 +152,18 @@ class AirtableConfig {
     return this.bases;
   }
 
+  setCurrentBase(baseId) {
+    if (!this.bases.includes(baseId)) {
+      throw new Error('[setCurrentBase] Invalid base id provided!');
+    }
+    this.currentBase = baseId;
+  }
+
   toObject() {
     return {
-      api_key: this.api_key,
+      apiKey: this.apiKey,
       bases: this.bases,
+      currentBase: this.currentBase,
     };
   }
 }
@@ -156,7 +171,7 @@ class AirtableConfig {
 class AppConfig {
   scraping = false;
   maxTabs = 3;
-  airtable = new AirtableConfig();
+  airtable = new AirtableConfig({});
 
   constructor({ scraping = false, maxTabs = 3, airtable = {} }) {
     this.scraping = scraping;

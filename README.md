@@ -3,6 +3,10 @@
 This extension scraps product info like title, description from various shopping site.
 
 
+## Airtable
+- API Key: key7O52RsgH6Nxxuv
+- Base ID: app3TPgrNQ8MAaMYI
+
 ## ID
 hakobpmphaleegackblhmmigplnlbndp
 
