@@ -25,6 +25,7 @@ function fillStartScrapForm() {
   return _MEMORY.loadSettings()
     .then(settings => {
       const iSettings = new AppConfig(settings);
+      console.log('[Setting]', iSettings);
       $('#max-tabs').val(iSettings.maxTabs);
       $('#base-id').val(iSettings.airtable.currentBase);
     })

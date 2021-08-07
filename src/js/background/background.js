@@ -1,6 +1,7 @@
 const AIRTABLE_API_KEY = 'key7O52RsgH6Nxxuv';
 const EXTENSION_ID = 'hakobpmphaleegackblhmmigplnlbndp';
 var _tabs = [];
+var _scrapingTabs = [];
 var _sites = [];
 var appData;
 var Airtable = require("airtable");
@@ -12,22 +13,29 @@ const activity = {
       iSettings.maxTabs = iSettings.maxTabs || 5;
       iSettings.airtable.apiKey = iSettings.airtable.apiKey || AIRTABLE_API_KEY;
       iSettings.scraping = iSettings.scraping || false;
-      console.log('[settings]', settings, iSettings);
       return _MEMORY.storeSettings(iSettings.toObject());
     });
   },
   openNewTab: (url = null) => {
     url = url || "https://google.com";
     return new Promise((resolve, reject) => {
-      const tab = chrome.tabs.create({ url }, (tab) => {
-        console.log("[Tab created] callback", tab);
+      const tab = chrome.tabs.create({ url, active: false }, (tab) => {
         _tabs.push(tab.id);
         resolve(tab.id);
       });
     });
   },
   closeTabs: async (ids) => {
-    return chrome.tabs.remove(ids);
+    // return chrome.tabs.remove(ids);
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.tabs.remove(ids, () => {
+          resolve(true);
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
   },
   getAllTabs: async () => {
     return new Promise((resolve, reject) => {
@@ -56,6 +64,7 @@ const activity = {
       .then((products) => products.slice(0, num));
   },
   fillEmptyTabs: () => {
+    console.log('[Activity][FillEmptyTabs]');
     return _MEMORY
       .loadSettings()
       .then((settings) => {
@@ -116,15 +125,42 @@ const activity = {
       })
       .then(async sProducts => {
         const tabs = await activity.getExtensionTabs();
-
-        console.log('[tabs]', tabs);
         tabs.forEach(tab => activity.sendDataToTab(tab.id, { status: 'TEST' }));
+        
         return activity.fillEmptyTabs();
       })
       .catch(error => {
         console.log('[onStartScrapRequest]', error);
       });
 
+  },
+  onScrapCompleted: (product) => {
+    console.log('[]')
+    return _MEMORY.loadProducts()
+      .then(sProducts => {
+        const idx = sProducts.map(p => p.url).indexOf(product.url);
+        if (idx > -1) {
+          const updateKeys = ['title', 'description', 'price', 'oldPrice', 'currency', 'imagse', 'brand', 'category', 'colors', 'sizes', 'variants'];
+          updateKeys.forEach(key => {
+            sProducts[idx][key] = product[key];
+          });
+          sProducts[idx]['completed'] = true;
+          sProducts[idx]['scraping'] = false;
+          sProducts[idx].updatedAt = Date.now();
+        }
+        return _MEMORY.storeProducts(sProducts);
+      });
+  },
+
+  markProductAsScrapingByURL: (url, scraping) => {
+    return _MEMORY.loadProducts()
+      .then(sProducts => {
+        const idx = sProducts.map(p => p.url).indexOf(url);
+        if (idx > -1) {
+          sProducts[idx].scraping = scraping;
+        }
+        return _MEMORY.storeProducts(sProducts);
+      });
   },
 
   // Airtable Operations.
@@ -176,7 +212,6 @@ const activity = {
         .eachPage(
           function page(records, fetchNextPage) {
             records.forEach(record => {
-              console.log('[Record]', record.id);
               const iProduct = new Product({
                 title: record.get('Product Title'),
                 url: record.get("URL to Competitor's Product").trim(),
@@ -224,23 +259,25 @@ onBackgroundScriptLoaded();
 // tab opened completely
 chrome.webNavigation.onCompleted.addListener(
   async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
-    console.log("[Tab Loaded]", url, tabId, _tabs);
+    // console.log("[Tab Loaded]", url, tabId, _tabs);
 
     const parsedURL = new URL(url);
     const host = parsedURL.host.replace("www.", "");
-    // const isTarget = _sites.some((site) => site.domain.includes(host));
-    const sites = await _MEMORY.loadProfiles();
-    const products = await _MEMORY.loadProducts();
-    const [site] = sites.filter((st) => st.domain.includes(host));
-    const [product] = products.filter((prod) => prod.url === url);
 
     // if this tab is opened by background script, then start scraping.
-    if (_tabs.includes(tabId)) {
+    if (_tabs.includes(tabId) && !_scrapingTabs.includes(tabId)) {
+      // const isTarget = _sites.some((site) => site.domain.includes(host));
+      const sites = await _MEMORY.loadProfiles();
+      const products = await _MEMORY.loadProducts();
+      const [site] = sites.filter((st) => st.domain.includes(host));
+      const [product] = products.filter((prod) => prod.url === url);
+      await activity.markProductAsScrapingByURL(url);
       chrome.tabs.sendMessage(tabId, {
         type: _ACTION.START_SCRAP,
         site,
         product,
       });
+      _scrapingTabs.push(tabId);
       console.log("[Message] scrap~");
     }
   }
@@ -248,31 +285,32 @@ chrome.webNavigation.onCompleted.addListener(
 
 // listen to closing tabs
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
+  // remove tab from global variables;
   _tabs.splice(_tabs.indexOf(tabId), 1);
-  console.log("[Tab Closed]", tabId, removeInfo, _tabs);
+  const [scrapedTab] = _scrapingTabs.splice(_scrapingTabs.indexOf(tabId), 1);
+  // console.log("[Tab Closed]", tabId, removeInfo, _tabs);
+  if (scrapedTab) {
+    return activity.fillEmptyTabs();
+  }
 });
 
-chrome.extension.onMessage.addListener(function (
-  request,
-  sender,
-  sendResponse
-) {
+// Listen to the messages from content scripts and extension pages.
+chrome.extension.onMessage.addListener(function ( request, sender, sendResponse ) {
   console.log("[Data] Requested", request);
   const { type, ...payload } = request;
-  // console.log('[message]', request, sender);
+  const { tab: { id, url } } = sender;
+  // console.log('[message]', request);
+  console.log('[Sender]', id, url);
+
   if (type === "requestData") {
     sendResponse(appData);
   } else if (type === _ACTION.START_SCRAP) {
     activity.onStartScrapRequest(payload);
-    // return _MEMORY
-    //   .loadSettings()
-    //   .then((settings) => {
-    //     settings.scraping = true;
-    //     settings.max_tabs = payload.max_tabs;
-    //     return _MEMORY.storeSettings(settings);
-    //   })
-    //   .then((settings) => activity.fillEmptyTabs())
-    //   .then(() => sendResponse({ status: true }));
+  } else if (type === _ACTION.SCRAP_FINISHED) {
+    return activity.onScrapCompleted(payload.product)
+      .then(async () => {
+        await activity.closeTabs([id]);
+      });
   }
 });
 
@@ -287,7 +325,6 @@ async function onBackgroundScriptLoaded() {
   await activity.initializeSetting();
 
   loadData();
-  // setInterval(openNewTab, 5000);
 
   loadSiteProfiles().then((sites) => {
     _sites = sites;
@@ -298,41 +335,10 @@ async function onBackgroundScriptLoaded() {
   var base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(
     "app3TPgrNQ8MAaMYI"
   );
-  // base('Products').find('rectNtnIndBYEghXH', function(err, record) {
-  //   if (err) { console.error(err); return; }
-  //   console.log('Retrieved', record.id);
-  // });
-
-  // base('Products').select({
-  //   // Selecting the first 3 records in All Product:
-  //   fields: ['Product Title'],
-  //   maxRecords: 5000,
-  //   pageSize: 2,
-  //   view: "All Product",
-  //   // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
-  //   filterByFormula: "AND(NOT({Product Title} = ''))",
-  // }).eachPage(function page(records, fetchNextPage) {
-  //     // This function (`page`) will get called for each page of records.
-  //     console.log('[Page]');
-  //     records.forEach(function(record) {
-  //         console.log('Retrieved', record.get('Product Title'), record.get('Published'));
-  //     });
-
-  //     // To fetch the next page of records, call `fetchNextPage`.
-  //     // If there are more records, `page` will get called again.
-  //     // If there are no more records, `done` will get called.
-  //     fetchNextPage();
-
-  // }, function done(err) {
-  //   console.log('[Done]');
-  //     if (err) { console.error(err); return; }
-  // });
-
   const total = await activity.DB_totalCount({
     apiKey: AIRTABLE_API_KEY,
     baseId: 'app3TPgrNQ8MAaMYI',
   });
-
   console.log("[Total]", total);
 }
 
@@ -340,14 +346,12 @@ function loadData() {
   chrome.storage.local.get(["data"], function (store = {}) {
     const { data } = store;
     appData = data;
-    console.log("[Cache][Data]", appData);
   });
 }
 
 function openNewTab(url = null) {
   url = url || "https://google.com";
   const tab = chrome.tabs.create({ url }, (tab) => {
-    console.log("[Tab created] callback", tab);
     _tabs.push(tab.id);
   });
 }

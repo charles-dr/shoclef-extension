@@ -109,7 +109,28 @@ class ShoclefScraper {
 
   completeScraping() {
     // submit data to airtable or do something else.
-    console.log('[Scrap][Completed]', this.product);
+    console.log('[Scrap][Completed]', typeof this.product, this.product);
+    try {
+      chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
+    } catch (e) {
+      console.log('[Scrap][Event][Completed] Error: ', e);
+    }
+  }
+
+  extractNumber(str_src) {
+    const NUMERIC_REGEXP = /[-]{0,1}[\d]*(,)*[\d]*[.]{0,1}[\d]+/g;
+    const p_num = str_src.match(NUMERIC_REGEXP)[0];
+    return p_num;
+  }
+
+  analyzePriceCurrency(src) {
+    const NUMERIC_REGEXP = /[-]{0,1}[\d]*(,)*[\d]*[.]{0,1}[\d]+/g;
+    const COMMA_REGEXP = /,/g
+    const p_num = src.match(NUMERIC_REGEXP)[0];
+    const p_currency = src.replace(p_num, '').trim();
+    const currency = CURRENCY[p_currency] || p_currency;
+    const price = Number(p_num.replace(COMMA_REGEXP, ''));
+    return { currency, price };
   }
 
   async sleep(ms) {
@@ -524,20 +545,26 @@ class JcrewScraper extends ShoclefScraper {
 
   async getPrice() {
     try {
-      const salePriceElement = document.querySelectorAll('[data-qaid=pdpProductPriceDiscount]')[0];
+      const salePriceElement = document.querySelectorAll('[data-qaid=pdpProductPriceSale]')[0];
       const oldPriceElement = document.querySelectorAll('[data-qaid=pdpProductPriceRegular]')[0];
+      let src_string = '';
       if (salePriceElement) {
-        return Number(salePriceElement.innerText.replace(/\([^)]+\)/, '').replace('$', ''))
+        src_string = salePriceElement.innerText.replace(/\([^)]+\)/, '');
       } else {
-        return Number(oldPriceElement.innerText.replace('$', ''));
+        src_string = oldPriceElement.innerText;
       }
+      const { currency, price } = this.analyzePriceCurrency(src_string);
+      this.product.currency = currency;
+      return price;
     } catch (e) {
       return 0;
     }
   }
 
   async getOldPrice() {
-    return Number(document.querySelectorAll('[data-qaid=pdpProductPriceRegular]')[0].innerText.replace('$', ''));
+    const str_price = await this.findSingleValue('[data-qaid=pdpProductPriceRegular]', __RETURN.TEXT);
+    const str_num = this.extractNumber(str_price);
+    return Number(str_num);
   }
 
   async getSizes() {
@@ -869,7 +896,7 @@ $(function () {
   startScraping();
 });
 
-chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   const { type, site, product } = message;
   if (type === _ACTION.START_SCRAP && site && product) {
     // const scraper = new ShoclefScraper(site, product);

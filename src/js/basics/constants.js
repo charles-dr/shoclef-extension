@@ -73,7 +73,6 @@ const _MEMORY = {
     });
   },
   storeSettings: (settings) => {
-    console.log('[Store Setting]', settings);
     return new Promise((resolve, reject) => {
       try {
         chrome.storage.local.set({ [_STORE_KEY.SETTINGS]: settings });
