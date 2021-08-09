@@ -1,9 +1,17 @@
 const AIRTABLE_API_KEY = 'key7O52RsgH6Nxxuv';
 const EXTENSION_ID = 'hakobpmphaleegackblhmmigplnlbndp';
+
+var tabManager = new TabStatusManager();
+
+
+var _open_tabs = []; /// { id, url, opened, scraping }
+
 var _tabs = [];
 var _scrapingTabs = [];
+
 var _sites = [];
 var appData;
+
 var Airtable = require("airtable");
 
 const activity = {
@@ -18,9 +26,13 @@ const activity = {
   },
   openNewTab: (url = null) => {
     url = url || "https://google.com";
+    tabManager.addTab({ url });
     return new Promise((resolve, reject) => {
       const tab = chrome.tabs.create({ url, active: false }, (tab) => {
-        _tabs.push(tab.id);
+        tabManager.tabOpened(url, tab.id);
+        // @deprcated
+        // _tabs.push(tab.id);
+
         resolve(tab.id);
       });
     });
@@ -30,6 +42,7 @@ const activity = {
     return new Promise((resolve, reject) => {
       try {
         chrome.tabs.remove(ids, () => {
+          console.log('[closeTab] closed ', ids);
           resolve(true);
         });
       } catch (e) {
@@ -59,7 +72,9 @@ const activity = {
     return _MEMORY
       .loadProducts()
       .then((products) =>
-        products.filter((product) => !product.scraping && !product.completed)
+        products
+          .filter((product) => !product.scraping && !product.completed)
+          .filter(product => !tabManager.getTabURLs.includes(product.url))
       )
       .then((products) => products.slice(0, num));
   },
@@ -67,16 +82,23 @@ const activity = {
     console.log('[Activity][FillEmptyTabs]');
     return _MEMORY
       .loadSettings()
+      // .then(settings => {
+      //   const iSettings = new AppConfig(settings);
+      //   iSettings.scraping = true;
+      //   return _MEMORY.storeSettings(iSettings.toObject());
+      // })
       .then((settings) => {
         const iSettings = new AppConfig(settings);
-        // if (!settings.scraping) throw new Error("Scraping is inactive!");
+        if (!settings.scraping) throw new Error("Scraping is inactive!");
+
         if (_tabs.length >= iSettings.maxTabs)
           throw new Error("Already running max tabs!");
         return activity.selectCandidateProducts(iSettings.maxTabs - _tabs.length);
       })
-      .then((products) =>
-        Promise.all(products.map((product) => activity.openNewTab(product.url)))
-      )
+      .then((products) => {
+        console.log(`[fillEmptyTabs] will open ${products.length} tabs!`);
+        return Promise.all(products.map((product) => activity.openNewTab(product.url)))
+      })
       .catch((error) => {
         console.log(`[Fill Empty Tabs] Error: ${error.message}`);
       });
@@ -96,6 +118,7 @@ const activity = {
         const iSettings = new AppConfig(settings);
         iSettings.maxTabs = maxTabs;
         iSettings.airtable.currentBase = baseId;
+        iSettings.scraping = true;
         return _MEMORY.storeSettings(iSettings.toObject());
       })
       .then(settings => {
@@ -124,9 +147,11 @@ const activity = {
         return _MEMORY.storeProducts(sProducts);
       })
       .then(async sProducts => {
+        // message to the extension page
         const tabs = await activity.getExtensionTabs();
         tabs.forEach(tab => activity.sendDataToTab(tab.id, { status: 'TEST' }));
-        
+
+        // select & open pages.
         return activity.fillEmptyTabs();
       })
       .catch(error => {
@@ -134,11 +159,17 @@ const activity = {
       });
 
   },
-  onScrapCompleted: (product) => {
-    console.log('[]')
+  onScrapCompleted: async (product, tabId) => {
+    const [tab] = tabManager.tabs.filter(t => t.id === tabId);
+    if (!tab) {
+      console.log('[onScrapingCompleted] The target tab is not registered in the manager!');
+      return false;
+    }
+    // if (!tab) throw new Error('The target tab is not registered in the manager!');
     return _MEMORY.loadProducts()
       .then(sProducts => {
-        const idx = sProducts.map(p => p.url).indexOf(product.url);
+        // const idx = sProducts.map(p => p.url).indexOf(product.url);
+        const idx = sProducts.map(p => p.url).indexOf(tab.url);
         if (idx > -1) {
           const updateKeys = ['title', 'description', 'price', 'oldPrice', 'currency', 'imagse', 'brand', 'category', 'colors', 'sizes', 'variants'];
           updateKeys.forEach(key => {
@@ -147,6 +178,7 @@ const activity = {
           sProducts[idx]['completed'] = true;
           sProducts[idx]['scraping'] = false;
           sProducts[idx].updatedAt = Date.now();
+          console.log('[Update target product with scraping result.]', sProducts[idx].completed, sProducts[idx]);
         }
         return _MEMORY.storeProducts(sProducts);
       });
@@ -277,6 +309,7 @@ chrome.webNavigation.onCompleted.addListener(
         site,
         product,
       });
+      tagManager.startedTabScraping(url);
       _scrapingTabs.push(tabId);
       console.log("[Message] scrap~");
     }
@@ -285,13 +318,15 @@ chrome.webNavigation.onCompleted.addListener(
 
 // listen to closing tabs
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
-  // remove tab from global variables;
-  _tabs.splice(_tabs.indexOf(tabId), 1);
-  const [scrapedTab] = _scrapingTabs.splice(_scrapingTabs.indexOf(tabId), 1);
-  // console.log("[Tab Closed]", tabId, removeInfo, _tabs);
-  if (scrapedTab) {
+  if (tabManager.getTabIds().includes(tabId)) {
+    tabManager.deleteTabById(tabId);
     return activity.fillEmptyTabs();
   }
+  
+  // remove tab from global variables;
+  // _tabs.splice(_tabs.indexOf(tabId), 1);
+  // const [scrapedTab] = _scrapingTabs.splice(_scrapingTabs.indexOf(tabId), 1);
+  // console.log("[Tab Closed]", tabId, removeInfo, _tabs);
 });
 
 // Listen to the messages from content scripts and extension pages.
@@ -307,9 +342,10 @@ chrome.extension.onMessage.addListener(function ( request, sender, sendResponse 
   } else if (type === _ACTION.START_SCRAP) {
     activity.onStartScrapRequest(payload);
   } else if (type === _ACTION.SCRAP_FINISHED) {
-    return activity.onScrapCompleted(payload.product)
-      .then(async () => {
-        await activity.closeTabs([id]);
+    return activity.onScrapCompleted(payload.product, id)
+      .then((sProducts) => {
+        console.log('[After Marked completed]', sProducts);
+        return activity.closeTabs([id]);
       });
   }
 });

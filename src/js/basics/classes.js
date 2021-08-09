@@ -187,3 +187,87 @@ class AppConfig {
     };
   }
 }
+
+
+class TabStatus {
+  id = '';
+  url = '';
+  opened = false;
+  scraping = false;
+
+  constructor({ id = '', url, opened = false, scraping = false }) {
+    this.id = id;
+    this.url = url;
+    this.opened = opened;
+    this.scraping = scraping;
+  }
+
+  toObject() {
+    return {
+      id: this.id,
+      url: this.url,
+      opened: this.opened,
+      scraping: this.scraping,
+    };
+  }
+}
+
+class TabStatusManager {
+  tabs = [];
+
+  constructor(urls = []) {
+    urls.forEach(url => {
+      this.tabs.push(new TabStatus({ url }));
+    });
+  }
+
+  getTabIds() {
+    return this.tabs.map(tab => tab.id);
+  }
+
+  getTabURLs() {
+    return this.tabs.map(tab => tab.url);
+  }
+
+  addTab({ url, id = '', opened = false, scraping = false }) {
+    this.tabs.push(new TabStatus({ id, url, opened, scraping }));
+  }
+
+  tabOpened(url, id) {
+    const tabIndex = this.tabs.map(t => t.url).indexOf(url);
+    console.log('[TabStatusManager][tabOpended]: ', id, url, tabIndex);
+    if (tabIndex > -1) {
+      this.tabs[tabIndex].id = id;
+      this.tabs[tabIndex].opened = true;
+      return this.tabs[tabIndex];
+    }
+    return false;
+  }
+
+  startedTabScraping(url) {
+    const tabIndex = this.tabs.map(t => r.url).indexOf(url);
+    if (tabIndex > -1) {
+      this.tabs[tabIndex].scraping = true;
+      return this.tabs[tabIndex];
+    }
+    return false;
+  }
+
+  deleteTab(url) {
+    const tabIndex = this.tabs.map(tab => tab.url).indexOf(url);
+    this.tabs.splice(tabIndex, 1);
+    return this.tabs;
+  }
+
+  deleteTabById(id) {
+    const tabIndex = this.tabs.map(tab => tab.id).indexOf(id);
+    console.log('[TabStatusManager] deleteTabById', id, tabIndex, this.tabs.length);
+    if (tabIndex > -1) {
+      this.tabs.splice(tabIndex, 1);
+      console.log('[TabStatusManager] deleteTabById', this.tabs);
+      return this.tabs;
+    } else {
+      return false;
+    }
+  }
+}
