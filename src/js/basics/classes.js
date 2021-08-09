@@ -216,9 +216,7 @@ class TabStatusManager {
   tabs = [];
 
   constructor(urls = []) {
-    urls.forEach(url => {
-      this.tabs.push(new TabStatus({ url }));
-    });
+    console.log('[TabStatusManager] initialized.');
   }
 
   getTabIds() {
@@ -227,6 +225,16 @@ class TabStatusManager {
 
   getTabURLs() {
     return this.tabs.map(tab => tab.url);
+  }
+
+  getTabById(tabId) {
+    const [tab] = this.tabs.filter(t => t.id === tabId);
+    return tab;
+  }
+
+  getTabByURL(url) {
+    const [tab] = this.tab.filter(t => t.url === url);
+    return tab;
   }
 
   addTab({ url, id = '', opened = false, scraping = false }) {

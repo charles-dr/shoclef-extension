@@ -3,12 +3,6 @@ const EXTENSION_ID = 'hakobpmphaleegackblhmmigplnlbndp';
 
 var tabManager = new TabStatusManager();
 
-
-var _open_tabs = []; /// { id, url, opened, scraping }
-
-var _tabs = [];
-var _scrapingTabs = [];
-
 var _sites = [];
 var appData;
 
@@ -30,9 +24,6 @@ const activity = {
     return new Promise((resolve, reject) => {
       const tab = chrome.tabs.create({ url, active: false }, (tab) => {
         tabManager.tabOpened(url, tab.id);
-        // @deprcated
-        // _tabs.push(tab.id);
-
         resolve(tab.id);
       });
     });
@@ -68,13 +59,17 @@ const activity = {
   sendDataToTab: async (tabId, data) => {
     return chrome.tabs.sendMessage(tabId, data);
   },
+  messageToExtensionPage: async (data = {}) => {
+    const tabs = await activity.getExtensionTabs();
+    tabs.forEach(tab => activity.sendDataToTab(tab.id, data));
+  },
   selectCandidateProducts: (num) => {
     return _MEMORY
       .loadProducts()
       .then((products) =>
         products
           .filter((product) => !product.scraping && !product.completed)
-          .filter(product => !tabManager.getTabURLs.includes(product.url))
+          .filter(product => !tabManager.getTabURLs().includes(product.url))
       )
       .then((products) => products.slice(0, num));
   },
@@ -91,9 +86,9 @@ const activity = {
         const iSettings = new AppConfig(settings);
         if (!settings.scraping) throw new Error("Scraping is inactive!");
 
-        if (_tabs.length >= iSettings.maxTabs)
+        if (tabManager.tabs.length >= iSettings.maxTabs)
           throw new Error("Already running max tabs!");
-        return activity.selectCandidateProducts(iSettings.maxTabs - _tabs.length);
+        return activity.selectCandidateProducts(iSettings.maxTabs - tabManager.tabs.length);
       })
       .then((products) => {
         console.log(`[fillEmptyTabs] will open ${products.length} tabs!`);
@@ -128,7 +123,7 @@ const activity = {
           activity.DB_loadProducts({
             apiKey: iSettings.airtable.apiKey,
             baseId: iSettings.airtable.currentBase,
-            filter:"AND(NOT({URL to Competitor's Product} = '', {Scraped Completed from URL} = 0))",
+            filter: "AND(NOT({URL to Competitor's Product} = ''), {Scraped Completed from URL} = 0)",
           }),
           _MEMORY.loadProducts(),
         ]);
@@ -291,13 +286,12 @@ onBackgroundScriptLoaded();
 // tab opened completely
 chrome.webNavigation.onCompleted.addListener(
   async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
-    // console.log("[Tab Loaded]", url, tabId, _tabs);
 
     const parsedURL = new URL(url);
     const host = parsedURL.host.replace("www.", "");
-
+    const tabStatus = tabManager.getTabById(tabId);
     // if this tab is opened by background script, then start scraping.
-    if (_tabs.includes(tabId) && !_scrapingTabs.includes(tabId)) {
+    if (tabStatus && tabStatus.opended && !tabStatus.scraping) {
       // const isTarget = _sites.some((site) => site.domain.includes(host));
       const sites = await _MEMORY.loadProfiles();
       const products = await _MEMORY.loadProducts();
@@ -310,7 +304,6 @@ chrome.webNavigation.onCompleted.addListener(
         product,
       });
       tagManager.startedTabScraping(url);
-      _scrapingTabs.push(tabId);
       console.log("[Message] scrap~");
     }
   }
@@ -322,11 +315,6 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
     tabManager.deleteTabById(tabId);
     return activity.fillEmptyTabs();
   }
-  
-  // remove tab from global variables;
-  // _tabs.splice(_tabs.indexOf(tabId), 1);
-  // const [scrapedTab] = _scrapingTabs.splice(_scrapingTabs.indexOf(tabId), 1);
-  // console.log("[Tab Closed]", tabId, removeInfo, _tabs);
 });
 
 // Listen to the messages from content scripts and extension pages.
@@ -374,6 +362,7 @@ async function onBackgroundScriptLoaded() {
   const total = await activity.DB_totalCount({
     apiKey: AIRTABLE_API_KEY,
     baseId: 'app3TPgrNQ8MAaMYI',
+    filter: "AND(NOT({URL to Competitor's Product} = ''), {Scraped Completed from URL} = 0)",
   });
   console.log("[Total]", total);
 }
@@ -382,13 +371,6 @@ function loadData() {
   chrome.storage.local.get(["data"], function (store = {}) {
     const { data } = store;
     appData = data;
-  });
-}
-
-function openNewTab(url = null) {
-  url = url || "https://google.com";
-  const tab = chrome.tabs.create({ url }, (tab) => {
-    _tabs.push(tab.id);
   });
 }
 

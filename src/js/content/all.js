@@ -602,7 +602,10 @@ class JcrewScraper extends ShoclefScraper {
       for (let i = 0; i < thumbnails.length; i++) {
         thumbnails[i].click();
         await this.sleep(50);
-        images.push(document.querySelectorAll('[data-qaid="pdpProductGalleryGalleryItemHeroImage"]')[0].getAttribute('src'));        
+        const image_element = document.querySelectorAll('[data-qaid="pdpProductGalleryGalleryItemHeroImage"]')[0];
+        if (image_element) {
+          images.push(image_element.getAttribute('src'));        
+        }
       }
       return images;
     };
