@@ -73,7 +73,7 @@ const activity = {
       )
       .then((products) => products.slice(0, num));
   },
-  fillEmptyTabs: () => {
+  fillEmptyTabs: (init = false) => {
     console.log('[Activity][FillEmptyTabs]');
     return _MEMORY
       .loadSettings()
@@ -82,16 +82,50 @@ const activity = {
       //   iSettings.scraping = true;
       //   return _MEMORY.storeSettings(iSettings.toObject());
       // })
-      .then((settings) => {
+      .then(async (settings) => {
         const iSettings = new AppConfig(settings);
-        if (!settings.scraping) throw new Error("Scraping is inactive!");
+        if (!settings.scraping) {
+          // await activity.messageToExtensionPage({
+          //   type: _ACTION.SYSTEM_MESSAGE,
+          //   status: false,
+          //   title: 'Error',
+          //   message: 'Scraping is inactive now!',
+          // });
+          throw new Error("Scraping is inactive!");
+        }
 
         if (tabManager.tabs.length >= iSettings.maxTabs)
           throw new Error("Already running max tabs!");
         return activity.selectCandidateProducts(iSettings.maxTabs - tabManager.tabs.length);
       })
-      .then((products) => {
+      .then(async (products) => {
         console.log(`[fillEmptyTabs] will open ${products.length} tabs!`);
+        if (products.length === 0) {
+          await activity.messageToExtensionPage({
+            type: _ACTION.SYSTEM_MESSAGE,
+            status: true,
+            title: 'Scraping',
+            message: 'All products are scraped!',
+          });
+          // update setting : { scraping: false }
+          const settings = await _MEMORY.loadSettings();
+          settings.scraping = false;
+          await _MEMORY.storeSettings(settings);
+        } else {
+          if (init) {
+            await activity.messageToExtensionPage({
+              type: _ACTION.SYSTEM_MESSAGE,
+              status: true,
+              title: 'Success',
+              message: 'Scraping started!',
+            });
+          }
+        }
+        await activity.messageToExtensionPage({
+          type: _ACTION.SETTING_UPDATED,
+          status: true,
+          data: await _MEMORY.loadSettings(),
+        });
         return Promise.all(products.map((product) => activity.openNewTab(product.url)))
       })
       .catch((error) => {
@@ -133,6 +167,7 @@ const activity = {
         aProducts.forEach(aProduct => {
           // identify the product with url.
           const idx = sProducts.map(p => p.url.trim()).indexOf(aProduct.url);
+          if (sProducts[idx]['completed']) return true;
           if (idx > -1) {
             sProducts[idx] = { ...sProducts[idx], ...aProduct };
           } else {
@@ -142,12 +177,8 @@ const activity = {
         return _MEMORY.storeProducts(sProducts);
       })
       .then(async sProducts => {
-        // message to the extension page
-        const tabs = await activity.getExtensionTabs();
-        tabs.forEach(tab => activity.sendDataToTab(tab.id, { status: 'TEST' }));
-
         // select & open pages.
-        return activity.fillEmptyTabs();
+        return activity.fillEmptyTabs(true);
       })
       .catch(error => {
         console.log('[onStartScrapRequest]', error);

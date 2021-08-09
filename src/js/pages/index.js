@@ -1,7 +1,7 @@
 
 $(function() {
   fillStartScrapForm();
-  addEventListeners();
+
   $('#toggle-scrap-form').on('submit', function(e) {
     e.preventDefault();
     if (!confirm('Are you sure to start scraping?')) return;
@@ -13,13 +13,6 @@ $(function() {
     });
   });
 });
-
-function addEventListeners() {
-  chrome.runtime.onMessage.addListener (function(message, sender, sendResponse) {
-    const { type, ...payload } = message;
-    console.log('[Message From BG]', message);
-  });
-}
 
 function fillStartScrapForm() {
   return _MEMORY.loadSettings()

@@ -3,6 +3,8 @@ const _ACTION = {
   STOP_SCRAP: 'STOP_SCRAP',
   DO_SCRAP: 'DO_SCRAP',
   SCRAP_FINISHED: 'SCRAP_FINISHED',
+  SYSTEM_MESSAGE: 'SYSTEM_MESSAGE',
+  SETTING_UPDATED: 'SETTING_UPDATED',
 };
 
 const _STORE_KEY = {
@@ -83,3 +85,13 @@ const _MEMORY = {
     });
   },
 };
+
+const HOSTS_EMBEDDED = [
+  '6pm.com',
+  'amazon.com',
+  'amazon.in',
+  'asos.com',
+  'jcrew.com',
+  'boozt.com',
+  'madewell.com',
+];
