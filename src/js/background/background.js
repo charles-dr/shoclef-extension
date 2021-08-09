@@ -221,6 +221,15 @@ const activity = {
       });
   },
 
+  uploadProducts: async (products) => {
+    return _MEMORY.loadSettings()
+      .then(settings => {
+        const uProducts = products.map(product => {
+          const iProduct = new Product(product); 
+        });
+      })
+  },
+
   // Airtable Operations.
   DB_totalCount: ({ apiKey, baseId, filter = ''}) => {
     var Airtable = require("airtable");
@@ -365,6 +374,12 @@ chrome.extension.onMessage.addListener(function ( request, sender, sendResponse 
       .then((sProducts) => {
         console.log('[After Marked completed]', sProducts);
         return activity.closeTabs([id]);
+      });
+  } else if (type === _ACTION.UPLOAD_PRODUCT) {
+    return _MEMORY.loadProducts()
+      .then(allProducts => {
+        const products = allProducts.filter(product => product.completed);
+        return activity.uploadProducts(products);
       });
   }
 });

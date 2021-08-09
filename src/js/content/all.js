@@ -75,7 +75,7 @@ class ShoclefScraper {
     }
     if (repeat > CONFIG.N_REPEAT_UNTIL_FIND) {
       toastr.error('Failed to find element', 'Shoclef Scraper');
-      return '';
+      return [];
     }
     await this.sleep(100);
     return this.findMultipleValue(selector, returnType, repeat + 1);
@@ -83,18 +83,22 @@ class ShoclefScraper {
 
   async getCategory() {
     console.warn('[getCategory] define the function!');
+    return '';
   }
 
   async getPrice() {
     console.warn('[getPrice] define the function!');
+    return 0;
   }
 
   async getOldPrice() {
     console.warn('[getOldPrice] define the function!');
+    return 0;
   }
 
   async getSizes() {
     console.warn('[getSizes] define the function!');
+    return [];
   }
 
   async getImages() {
@@ -195,7 +199,7 @@ class PM6Scraper extends ShoclefScraper {
         sizes.push(option.innerText);
       });
     }
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {
@@ -210,7 +214,7 @@ class PM6Scraper extends ShoclefScraper {
     } else if (oneColor) {
       colors.push(oneColor.innerText);
     }
-    return colors.join(CONFIG.DELIMITER);
+    return colors;
   }
 
   async getImages() {
@@ -342,7 +346,7 @@ class Amazoncraper extends ShoclefScraper {
     if (swatches.length) {
       swatches.forEach(swatch => sizes.push(swatch.innerText));
     }
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {
@@ -351,7 +355,7 @@ class Amazoncraper extends ShoclefScraper {
     colorImages.forEach(image => {
       colors.push(image.getAttribute('alt'));
     })
-    return colors.join(CONFIG.DELIMITER);
+    return colors;
   }
 
   async getImages() {
@@ -369,7 +373,7 @@ class Amazoncraper extends ShoclefScraper {
     } catch (e) {
       console.log('[GetImage]', e.message);
     }
-    return images.join(CONFIG.DELIMITER);
+    return images;
   }
 
   async getVariants() {
@@ -459,7 +463,7 @@ class AsosScraper extends ShoclefScraper {
       });
     }
 
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {
@@ -470,7 +474,7 @@ class AsosScraper extends ShoclefScraper {
         colors.push(targets[0].innerText);
       }
     } catch (e) {}
-    return colors.join(CONFIG.DELIMITER);
+    return colors;
   }
 
   async getImages() {
@@ -489,8 +493,7 @@ class AsosScraper extends ShoclefScraper {
       console.log('[GetImage]', e.message);
     }
     return images
-      .filter((url, i, self) => self.indexOf(url) === i)
-      .join(CONFIG.DELIMITER);
+      .filter((url, i, self) => self.indexOf(url) === i);
   }
 
   async getVariants() {
@@ -575,7 +578,7 @@ class JcrewScraper extends ShoclefScraper {
         sizes.push(option.innerText.replace('- Not available', '').trim());
       });
     }
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {
@@ -589,7 +592,7 @@ class JcrewScraper extends ShoclefScraper {
         })
       }
     } catch (e) {}
-    return colors.join(CONFIG.DELIMITER);
+    return colors;
   }
 
   async getImages() {
@@ -702,7 +705,7 @@ class BooztScraper extends ShoclefScraper {
         sizes.push(option.innerText.trim());
       });
     }
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {
@@ -834,7 +837,7 @@ class MadeWellScraper extends ShoclefScraper {
         sizes.push(option.innerText.split('\n')[0].trim());
       });
     }
-    return sizes.join(CONFIG.DELIMITER);
+    return sizes;
   }
 
   async getColors() {

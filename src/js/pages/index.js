@@ -12,6 +12,14 @@ $(function() {
       ...data,
     });
   });
+
+  $('#upload-now').on('click', function(e) {
+    const data = {};
+    chrome.extension.sendMessage({
+      type: _ACTION.UPLOAD_PRODUCT,
+      ...data,
+    });
+  });
 });
 
 function fillStartScrapForm() {
