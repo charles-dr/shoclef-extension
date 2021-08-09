@@ -911,6 +911,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 });
 
 function startScraping(product = null, site = {}) {
+  const [host] = Object.keys(mapHost2Scraper).filter(key => window.location.href.includes(key));
+  if (!host) return false;
   product = product || { url: location.href };
   const scraper = selectScraper(product, site);
   scraper.doScrap();

@@ -167,7 +167,7 @@ const activity = {
         aProducts.forEach(aProduct => {
           // identify the product with url.
           const idx = sProducts.map(p => p.url.trim()).indexOf(aProduct.url);
-          if (sProducts[idx]['completed']) return true;
+          if (idx > -1 && sProducts[idx]['completed']) return true;
           if (idx > -1) {
             sProducts[idx] = { ...sProducts[idx], ...aProduct };
           } else {
@@ -224,10 +224,30 @@ const activity = {
   uploadProducts: async (products) => {
     return _MEMORY.loadSettings()
       .then(settings => {
+        const iSettings = new AppConfig(settings);
         const uProducts = products.map(product => {
           const iProduct = new Product(product); 
+          return {
+            id: iProduct.recordId,
+            fields: {
+              'Product Title': iProduct.title,
+              'Body HTML': iProduct.description,
+              'Brand': iProduct.brand,
+              'Category': iProduct.category.replace(/::/g, ','),
+              '∞ Add images from URLs': iProduct.images.join(','),
+              'Price': iProduct.price.toString(),
+              'Currency': iProduct.currency,
+              'Colors': iProduct.colors.join(','),
+              'Sizes': iProduct.sizes.join(','),
+              'Scraped Completed from URL': true,
+            },
+          };
         });
-      })
+        console.log('[Upload List]', uProducts);
+        const Airtable = require("airtable");
+        const base = new Airtable({ apiKey: iSettings.airtable.apiKey }).base(iSettings.airtable.currentBase);
+        return activity.DB_updateRecords(base, uProducts);
+      });
   },
 
   // Airtable Operations.
@@ -299,24 +319,20 @@ const activity = {
         );
     });
   },
-  DB_updateRecords: ({ apiKey, baseId, filter }) => {
-    let base;
-    base('Products').update([
-      {
-        "id": "recEnokgfENWLJ3Se",
-        "fields": {
-          "Product Title": "Fork Set !",
-          "ahref to original product": "https://www.saksoff5th.com/product/mah-gender-neutral-pride-flag-canvas-sneakers-0400014188504.html?dwvar_0400014188504_color=WHITE_RAINBOW"
-        }
+  DB_updateRecords: async (base, list) => {
+    return new Promise((resolve, reject) => {
+      try {
+        base('Products').update(list, function(err, records) {
+          if (err) {
+            console.log(err);
+            reject(err);
+          }
+          resolve(records);
+        });
+      } catch (error) {
+        console.log('[UploadProduct] Error: ', error);
+        reject(error);
       }
-    ], function(err, records) {
-      if (err) {
-        console.log(err);
-        return;
-      }
-      records.forEach(function(record) {
-        console.log(record.get('Option1 Name'));
-      });
     });
   },
 };
@@ -380,6 +396,12 @@ chrome.extension.onMessage.addListener(function ( request, sender, sendResponse 
       .then(allProducts => {
         const products = allProducts.filter(product => product.completed);
         return activity.uploadProducts(products);
+      })
+      .then(records => {
+        console.log('[Upload] completed', records.length);
+      })
+      .catch(error => {
+        console.log('[Upload] Error: ', error);
       });
   }
 });
