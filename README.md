@@ -45,11 +45,11 @@ https://www.jcrew.com
 https://factory.jcrew.com
 https://www.boozt.com
 https://www.madewell.com
-
-
-
 https://www.nordstrom.com
 https://www.nordstromrack.com
+
+
+
 https://poshmark.com
 https://www.ebay.com
 

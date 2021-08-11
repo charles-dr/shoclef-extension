@@ -1184,6 +1184,96 @@ class NordStromRackScraper extends ShoclefScraper {
   }
 }
 
+class PoshMarkScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[PoshMarkScraper] initialized!', product, website);
+    super(product, website);
+    this.getColors = this.getColors.bind(this);
+  }
+
+  async doScrap() {
+    console.log('[PoshMarkScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('.listing__title > h1', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('div.listing__description', __RETURN.HTML);
+    this.product.brand = await this.findSingleValue('.listing__title + a', __RETURN.TEXT);
+    this.product.category = await this.getCategory();
+    await this.getPrice();
+    this.product.sizes = await this.getSizes();
+    this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      const anchors = container.querySelectorAll('a');
+      anchors.forEach(anchor => {
+        categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const priceElement = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.listing__ipad-centered.d--fl.ai--c.m--t--5 > p')[0];
+      if (!priceElement) throw new Error('Not found the element!');
+      const oldPriceElement = priceElement.querySelectorAll('span')[0];
+      
+      const oldPrice = oldPriceElement.innerText;
+      const price = priceElement.innerText.replace(oldPrice, '');
+      this.product.price = Number(price.replace('$', ''));
+      this.product.oldPrice = Number(oldPrice.replace('$', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getSizes() {
+    const sizes = [];
+    try {
+      document.querySelectorAll('div.listing__size-selector > div > div.listing__size-selector-con > button').forEach(element => {
+        sizes.push(element.innerText);
+      });
+    } catch (error) {
+      console.log('[getSizes]', error);
+    }
+    return sizes;
+  }
+
+  async getColors() {
+    const colors = [];
+    try {
+
+    } catch (error) {
+      console.log('[getColors]', error);
+    }
+    return colors;
+  }
+
+  async getImages() {
+    const images = [];
+    document.querySelectorAll('.slideshow__img ul > li > div > img').forEach(element => {
+      images.push(element.getAttribute('data-src') || element.getAttribute('src'));
+    });
+    return images;
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1194,6 +1284,7 @@ const mapHost2Scraper = {
   'madewell.com': MadeWellScraper,
   'nordstrom.com': NordStromScraper,
   'nordstromrack.com': NordStromRackScraper,
+  'poshmark.com': PoshMarkScraper,
 };
 
 $(function () {
