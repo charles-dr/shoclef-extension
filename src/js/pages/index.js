@@ -14,6 +14,7 @@ $(function() {
   });
 
   $('#upload-now').on('click', function(e) {
+    if (!confirm('Are you sure to upload all products?')) return false;
     const data = {};
     chrome.extension.sendMessage({
       type: _ACTION.UPLOAD_PRODUCT,

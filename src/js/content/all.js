@@ -115,7 +115,7 @@ class ShoclefScraper {
     // submit data to airtable or do something else.
     console.log('[Scrap][Completed]', typeof this.product, this.product);
     try {
-      chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
+      // chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
     } catch (e) {
       console.log('[Scrap][Event][Completed] Error: ', e);
     }
@@ -886,14 +886,143 @@ class MadeWellScraper extends ShoclefScraper {
   }
 }
 
+class NordStromScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[BooztScraper] initialized!', product, website);
+    super(product, website);
+    this.getColors = this.getColors.bind(this);
+  }
+
+  async doScrap() {
+    console.log('[BooztScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('#product-page-product-title-lockup h1[itemprop=name]', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('#details-and-size', __RETURN.HTML);
+    this.product.brand = await this.findSingleValue('#product-page-product-title-lockup span[itemprop=name]', __RETURN.TEXT);
+    this.product.category = '';
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.sizes = await this.getSizes();
+    this.product.colors = await this.getColors();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getCategory() {
+    try {
+      const anchors = document.querySelectorAll('.breadcrumb.pdp-breadcrumbs li.breadcrumb-cat');
+      const categories = [];
+      anchors.forEach(anchor => {
+        categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const str_price = (await this.findSingleValue('#current-price-string', __RETURN.TEXT)).replace('$', '');
+      return Number(str_price);
+    } catch (e) {
+      console.log('[Price]', e);
+      return 0;
+    }
+  }
+
+  async getOldPrice() {
+    return 0;
+  }
+
+  async getSizes() {
+    const sizes = [];
+    try {
+      // click selection wrapper
+      const selectElement = document.querySelectorAll('#size-filter-product-page-anchor')[0];
+      if (!selectElement) throw new Error('Not found the size list wrapper!');
+      selectElement.click();
+
+      await this.sleep(300);
+      // check the size item in the size list.
+      const sizeList = document.querySelectorAll('#size-filter-product-page-option-list')[0];
+      if (!sizeList) throw new Error('Not found the size list!');
+
+      sizeList.querySelectorAll('li').forEach(element => {
+        const size = element.querySelectorAll('div div span span span')[0].innerText;
+        if (size) {
+          sizes.push(size);
+        }
+      });
+    } catch (error) {
+      console.log('[getSizes]', error);
+    }
+    return sizes;
+  }
+
+  async getColors() {
+    const colors = [];
+    try {
+      // check the existence of the selection wrapper and click it.
+      const selectionWrapper = document.querySelectorAll('#color-filter-product-page-anchor')[0];
+      if (!selectionWrapper) throw new Error('Not found the color selection wrapper!');
+      selectionWrapper.click();
+      await this.sleep(300);
+
+      // now get the color list.
+      document.querySelectorAll('#color-filter-product-page-option-list li span span span').forEach(item => {
+        colors.push(item.innerText);
+      });
+    } catch (error) {
+      console.log('[getColors]', error);
+    }
+    return colors;
+  }
+
+  async getImages() {
+    const swatches = document.querySelectorAll('ul#product-page-swatches > li > button');
+    const listOfImages = [];
+
+    const getImageOfSwatch= async () => {
+      const thumbnails = document.querySelectorAll('#product-page-thumbnail-gallery .slider .slider-frame ul li div button img');
+      const images = [];
+      for (let i = 0; i < thumbnails.length; i++) {
+        thumbnails[i].click();
+        await this.sleep(100);
+        const t_imgs = document.querySelectorAll('#pdp img[name="mobile-gallery-image"]');
+        const target = t_imgs[t_imgs.length - 1];
+        images.push(target.getAttribute('src'));
+      }
+      return images;
+    };
+    for (let j = 0; j < swatches.length; j++) {
+      swatches[j].click();
+      console.log('[Swatch] clicked', j, swatches[j]);
+      await this.sleep(300);
+      listOfImages.push(await getImageOfSwatch());
+    }
+    return listOfImages
+      .reduce((_imgs, list) => _imgs = _imgs.concat(list), [])
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
   'amazon.in': Amazoncraper,
   'asos.com': AsosScraper,
-  'jcrew.com': JcrewScraper,
   'boozt.com': BooztScraper,
+  'jcrew.com': JcrewScraper,
   'madewell.com': MadeWellScraper,
+  'nordstrom.com': NordStromScraper ,
 };
 
 $(function () {

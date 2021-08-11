@@ -1,6 +1,6 @@
 {
   "name": "Shoclef Scrapper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "scraps product data - title, description, etc.",
   "icons": {
     "16": "src/images/icon_16.png",
