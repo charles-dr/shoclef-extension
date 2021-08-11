@@ -968,7 +968,13 @@ class NordStromScraper extends ShoclefScraper {
     try {
       // check the existence of the selection wrapper and click it.
       const selectionWrapper = document.querySelectorAll('#color-filter-product-page-anchor')[0];
+
+      const singleColor = document.querySelectorAll('#desktop-sku-filters > div:nth-child(4)')[0];
+      // if there is no selection wrapper and a single color exists, return it only.
+      if (!selectionWrapper && singleColor) return [singleColor.innerText];
+      
       if (!selectionWrapper) throw new Error('Not found the color selection wrapper!');
+
       selectionWrapper.click();
       await this.sleep(300);
 
@@ -998,10 +1004,14 @@ class NordStromScraper extends ShoclefScraper {
       }
       return images;
     };
-    for (let j = 0; j < swatches.length; j++) {
-      swatches[j].click();
-      console.log('[Swatch] clicked', j, swatches[j]);
-      await this.sleep(300);
+    if (swatches.length) {
+      for (let j = 0; j < swatches.length; j++) {
+        swatches[j].click();
+        console.log('[Swatch] clicked', j, swatches[j]);
+        await this.sleep(300);
+        listOfImages.push(await getImageOfSwatch());
+      }
+    } else {
       listOfImages.push(await getImageOfSwatch());
     }
     return listOfImages
