@@ -1211,7 +1211,8 @@ class PoshMarkScraper extends ShoclefScraper {
   async getCategory() {
     try {
       const categories = [];
-      const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      // const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      const container = document.querySelectorAll('.listing__description + div > div:nth-child(1)')[0];
       const anchors = container.querySelectorAll('a');
       anchors.forEach(anchor => {
         categories.push(anchor.innerText.trim());
@@ -1224,7 +1225,7 @@ class PoshMarkScraper extends ShoclefScraper {
 
   async getPrice() {
     try {
-      const priceElement = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.listing__ipad-centered.d--fl.ai--c.m--t--5 > p')[0];
+      const priceElement = document.querySelectorAll('div.listing__ipad-centered p.h1')[0];
       if (!priceElement) throw new Error('Not found the element!');
       const oldPriceElement = priceElement.querySelectorAll('span')[0];
       
@@ -1254,7 +1255,11 @@ class PoshMarkScraper extends ShoclefScraper {
   async getColors() {
     const colors = [];
     try {
-
+      const container = document.querySelectorAll('.listing__description + div > div:nth-child(2)')[0]
+      const anchors = container.querySelectorAll('a');
+      anchors.forEach(anchor => {
+        colors.push(anchor.innerText.trim());
+      });
     } catch (error) {
       console.log('[getColors]', error);
     }
