@@ -1279,6 +1279,115 @@ class PoshMarkScraper extends ShoclefScraper {
   }
 }
 
+class EbayScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[EbayScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[EbayScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.getTitle();
+    this.product.description = await this.findSingleValue('.itemAttr > div.section', __RETURN.HTML);
+    await this.parseItemAttributes(); // brand, sizes, colors
+    this.product.category = await this.getCategory();
+    await this.getPrice();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getTitle() {
+    const title = await this.findSingleValue('#LeftSummaryPanel h1.it-ttl', __RETURN.TEXT);
+    return title.replace('Details about', '').trim();
+  }
+
+  async parseItemAttributes() {
+    const rows = document.querySelectorAll('.itemAttr > div.section > table > tbody > tr');
+    const attrMap = {};
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('th,td');
+      for (let i = 0; i < cells.length / 2; i ++) {
+        const key = cells[i * 2].innerText.replace(':', '').trim();
+        const value = cells[i * 2 + 1].innerText.trim();
+        attrMap[key] = value;
+      }
+    });
+
+    this.product.brand = attrMap['Brand'] || this.product.brand;
+    this.product.colors = attrMap['Color'] ? [attrMap['Color']] : [];
+    this.product.sizes = attrMap['Size'] ? [attrMap['Size']] : [];
+    return attrMap;
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      // const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      const container = document.querySelectorAll('#bc li.vi-VR-brumblnkLst > ul')[0];
+      const anchors = container.querySelectorAll('li[role=listitem] a span');
+      anchors.forEach(anchor => {
+        categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      if (document.querySelectorAll('#prcIsum')[0]) {
+        this.product.price = Number(document.querySelectorAll('#prcIsum')[0].innerText.replace('US $', ''));
+      } else if (document.querySelectorAll('#mm-saleDscPrc')[0]) {
+        this.product.price = Number(document.querySelectorAll('#mm-saleDscPrc')[0].innerText.replace('US $', ''));
+      } else {
+        const oldPrcElmt = document.querySelectorAll('#mm-saleOrgPrc')[0];
+        if (oldPrcElmt) {
+          this.product.oldPrice = Number(oldPrcElmt.innerText.replace('US $', '').trim());
+        }
+        const prcElmt = document.querySelectorAll('#mm-saleAmtSavedPrc')[0];
+        if (prcElmt) {
+          const txtPrice = prcElmt.innerText;
+          this.product.price = Number(txtPrice.substr(0, txtPrice.indexOf('(')).replace('$', ''));
+        }
+      }
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const swatches = document.querySelectorAll('#vi_main_img_fs > ul > li > button > table img');
+    const images = [];
+
+    const getImageOfSwatch= async () => {
+      const imgElmt = document.querySelectorAll('#icImg')[0];
+      if (imgElmt) {
+        images.push(imgElmt.getAttribute('src'));
+      }
+    };
+    if (swatches.length) {
+      for (let i = 0; i < swatches.length; i++) {
+        swatches[i].click();
+        await this.sleep(100);
+        await getImageOfSwatch();
+      }
+    }
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1290,6 +1399,7 @@ const mapHost2Scraper = {
   'nordstrom.com': NordStromScraper,
   'nordstromrack.com': NordStromRackScraper,
   'poshmark.com': PoshMarkScraper,
+  'ebay.com': EbayScraper,
 };
 
 $(function () {
