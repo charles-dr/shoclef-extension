@@ -115,7 +115,7 @@ class ShoclefScraper {
     // submit data to airtable or do something else.
     console.log('[Scrap][Completed]', typeof this.product, this.product);
     try {
-      // chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
+      chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
     } catch (e) {
       console.log('[Scrap][Event][Completed] Error: ', e);
     }
@@ -1405,12 +1405,14 @@ const mapHost2Scraper = {
 $(function () {
   console.log("[Script][All] Loaded!", typeof fetchInfo);
   // window.addEventListener("keyup", doKeyPress, false); //add the keyboard handler
-  startScraping();
+  // startScraping();
 });
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   const { type, site, product } = message;
+  console.log('[Message From Background]', message);
   if (type === _ACTION.START_SCRAP && site && product) {
+    console.log('[Command From Background] Start Scraping');
     // const scraper = new ShoclefScraper(site, product);
     startScraping(product, site);
   }

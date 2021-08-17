@@ -191,6 +191,7 @@ class AppConfig {
 
 class TabStatus {
   id = '';
+  originURL = '';
   url = '';
   opened = false;
   scraping = false;
@@ -198,8 +199,13 @@ class TabStatus {
   constructor({ id = '', url, opened = false, scraping = false }) {
     this.id = id;
     this.url = url;
+    this.originURL = url;
     this.opened = opened;
     this.scraping = scraping;
+  }
+
+  urlChanged(url) {
+    this.url = url;
   }
 
   toObject() {
@@ -227,6 +233,10 @@ class TabStatusManager {
     return this.tabs.map(tab => tab.url);
   }
 
+  getTabOriginURLs() {
+    return this.tabs.map(tab => tab.originURL);
+  }
+
   getTabById(tabId) {
     const [tab] = this.tabs.filter(t => t.id === tabId);
     return tab;
@@ -252,8 +262,16 @@ class TabStatusManager {
     return false;
   }
 
+  tabURLUpdated(id, url) {
+    const tabIndex = this.tabs.map(t => t.id).indexOf(id);
+    if(tabIndex > -1) {
+      console.log('[TabStatusManager][URL Changed]', id, this.tabs[tabIndex].originURL, url);
+      this.tabs[tabIndex].urlChanged(url);
+    }
+  }
+
   startedTabScraping(url) {
-    const tabIndex = this.tabs.map(t => r.url).indexOf(url);
+    const tabIndex = this.tabs.map(t => t.url).indexOf(url);
     if (tabIndex > -1) {
       this.tabs[tabIndex].scraping = true;
       return this.tabs[tabIndex];

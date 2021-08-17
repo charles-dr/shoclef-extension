@@ -69,7 +69,7 @@ const activity = {
       .then((products) =>
         products
           .filter((product) => !product.scraping && !product.completed)
-          .filter(product => !tabManager.getTabURLs().includes(product.url))
+          .filter(product => !tabManager.getTabOriginURLs().includes(product.url))
       )
       .then((products) => products.slice(0, num));
   },
@@ -195,7 +195,7 @@ const activity = {
     return _MEMORY.loadProducts()
       .then(sProducts => {
         // const idx = sProducts.map(p => p.url).indexOf(product.url);
-        const idx = sProducts.map(p => p.url).indexOf(tab.url);
+        const idx = sProducts.map(p => p.url).indexOf(tab.originURL);
         if (idx > -1) {
           const updateKeys = ['title', 'description', 'price', 'oldPrice', 'currency', 'imagse', 'brand', 'category', 'colors', 'sizes', 'variants'];
           updateKeys.forEach(key => {
@@ -210,7 +210,7 @@ const activity = {
       });
   },
 
-  markProductAsScrapingByURL: (url, scraping) => {
+  markProductAsScrapingByURL: (url, scraping = true) => {
     return _MEMORY.loadProducts()
       .then(sProducts => {
         const idx = sProducts.map(p => p.url).indexOf(url);
@@ -342,28 +342,38 @@ onBackgroundScriptLoaded();
 // tab opened completely
 chrome.webNavigation.onCompleted.addListener(
   async ({ url, tabId, processId, frameId, parentFrameId, timestamp }) => {
-
+    if (url === 'about:blank') return;
     const parsedURL = new URL(url);
     const host = parsedURL.host.replace("www.", "");
     const tabStatus = tabManager.getTabById(tabId);
+
     // if this tab is opened by background script, then start scraping.
-    if (tabStatus && tabStatus.opended && !tabStatus.scraping) {
+    if (tabStatus && tabStatus.url === url && tabStatus.opened && !tabStatus.scraping) {
       // const isTarget = _sites.some((site) => site.domain.includes(host));
       const sites = await _MEMORY.loadProfiles();
       const products = await _MEMORY.loadProducts();
       const [site] = sites.filter((st) => st.domain.includes(host));
-      const [product] = products.filter((prod) => prod.url === url);
-      await activity.markProductAsScrapingByURL(url);
+      const [product] = products.filter((prod) => prod.url === tabStatus.originURL);
+      tabManager.startedTabScraping(url);
       chrome.tabs.sendMessage(tabId, {
         type: _ACTION.START_SCRAP,
-        site,
+        site: site || {},
         product,
       });
-      tagManager.startedTabScraping(url);
-      console.log("[Message] scrap~");
+      await activity.markProductAsScrapingByURL(url);
+      console.log("[Message] scrap~", tabId, url);
     }
   }
 );
+
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  // console.log('updated tab', tabId, tab, changeInfo);
+  if (changeInfo.status === 'complete') {
+
+  } else if (changeInfo.url) {
+    tabManager.tabURLUpdated(tabId, changeInfo.url);
+  }
+});
 
 // listen to closing tabs
 chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
