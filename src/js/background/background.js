@@ -197,7 +197,7 @@ const activity = {
         // const idx = sProducts.map(p => p.url).indexOf(product.url);
         const idx = sProducts.map(p => p.url).indexOf(tab.originURL);
         if (idx > -1) {
-          const updateKeys = ['title', 'description', 'price', 'oldPrice', 'currency', 'imagse', 'brand', 'category', 'colors', 'sizes', 'variants'];
+          const updateKeys = ['title', 'description', 'price', 'oldPrice', 'currency', 'images', 'brand', 'category', 'colors', 'sizes', 'variants'];
           updateKeys.forEach(key => {
             sProducts[idx][key] = product[key];
           });
