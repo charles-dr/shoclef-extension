@@ -58,6 +58,7 @@ https://modesens.com/product/j.crew-farrah-triangle-bikini-top-belvedere-red-854
 https://www.esquire.com/style/mens-fashion/g36572770/best-mens-fashion-sales-memorial-day-2021/
 
 https://www.accuweather.com
+https://www.bluefly.com/products/bf-101428726-m2xm
 https://www.neimanmarcus.com
 https://www.pinterest.cl
 https://www.refinery29.com

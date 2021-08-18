@@ -87,12 +87,16 @@ const _MEMORY = {
   },
 };
 
-const HOSTS_EMBEDDED = [
+const _HOSTS_EMBEDDED = [
   '6pm.com',
   'amazon.com',
   'amazon.in',
   'asos.com',
-  'jcrew.com',
   'boozt.com',
+  'jcrew.com',
   'madewell.com',
+  'nordstrom.com',
+  'nordstromrack.com',
+  'poshmark.com',
+  'ebay.com',
 ];

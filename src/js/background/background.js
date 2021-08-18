@@ -70,6 +70,7 @@ const activity = {
         products
           .filter((product) => !product.scraping && !product.completed)
           .filter(product => !tabManager.getTabOriginURLs().includes(product.url))
+          .filter(product => _HOSTS_EMBEDDED.some(host => product.url.includes(host)))
       )
       // .then((products) => products.slice(0, num));
       .then(products => {
