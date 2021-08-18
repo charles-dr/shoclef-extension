@@ -71,7 +71,13 @@ const activity = {
           .filter((product) => !product.scraping && !product.completed)
           .filter(product => !tabManager.getTabOriginURLs().includes(product.url))
       )
-      .then((products) => products.slice(0, num));
+      // .then((products) => products.slice(0, num));
+      .then(products => {
+        const indexArray = Array.from(Array(10).keys());
+        const shuffled = indexArray.sort(() => 0.5 - Math.random());
+        const selectedIndex = shuffled.slice(0, num);
+        return products.filter((product, i) => selectedIndex.includes(i));
+      });
   },
   fillEmptyTabs: (init = false) => {
     console.log('[Activity][FillEmptyTabs]');
@@ -223,7 +229,7 @@ const activity = {
 
   uploadProducts: async (products) => {
     return _MEMORY.loadSettings()
-      .then(settings => {
+      .then(async settings => {
         const iSettings = new AppConfig(settings);
         const uProducts = products.map(product => {
           const iProduct = new Product(product); 
@@ -246,7 +252,15 @@ const activity = {
         console.log('[Upload List]', uProducts);
         const Airtable = require("airtable");
         const base = new Airtable({ apiKey: iSettings.airtable.apiKey }).base(iSettings.airtable.currentBase);
-        return activity.DB_updateRecords(base, uProducts);
+        let records = [];
+        const nIter = Math.ceil(uProducts.length / 10);
+        for (let i = 0; i < nIter; i++) {
+          records = records.concat(await activity.DB_updateRecords(base, uProducts.slice(i * 10, (i + 1) * 10)));
+          console.log(`[Uploading] ${records.length}/${uProducts.length}`)
+        }
+        console.log('[Upload] Done');
+        return records;
+        // return activity.DB_updateRecords(base, uProducts);
       });
   },
 
@@ -260,7 +274,7 @@ const activity = {
       base("Products").select({
           fields: ["Product Title"],
           maxRecords: 50000,
-          pageSize: 2,
+          pageSize: 100,
           view: "All Product",
           // filterByFormula: "AND(NOT({Product Title} = ''), NOT({ahref to original product} = '', {Published} = 1))",
           filterByFormula: filter,
@@ -398,18 +412,22 @@ chrome.extension.onMessage.addListener(function ( request, sender, sendResponse 
   } else if (type === _ACTION.SCRAP_FINISHED) {
     return activity.onScrapCompleted(payload.product, id)
       .then((sProducts) => {
-        console.log('[After Marked completed]', sProducts);
+        // console.log('[After Marked completed]', sProducts);
         return activity.closeTabs([id]);
       });
   } else if (type === _ACTION.UPLOAD_PRODUCT) {
     return _MEMORY.loadProducts()
       .then(allProducts => {
         const products = allProducts.filter(product => product.completed);
-        return activity.uploadProducts(products);
+        const pendingProducts = allProducts.filter(product => !product.completed);
+        return activity.uploadProducts(products)
+          .then(records => {
+            return _MEMORY.storeProducts(pendingProducts);
+          });
       })
-      .then(records => {
-        console.log('[Upload] completed', records.length);
-      })
+      // .then(records => {
+      //   console.log('[Upload] completed', records.length);
+      // })
       .catch(error => {
         console.log('[Upload] Error: ', error);
       });

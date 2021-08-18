@@ -128,13 +128,20 @@ class ShoclefScraper {
   }
 
   analyzePriceCurrency(src) {
-    const NUMERIC_REGEXP = /[-]{0,1}[\d]*(,)*[\d]*[.]{0,1}[\d]+/g;
-    const COMMA_REGEXP = /,/g
-    const p_num = src.match(NUMERIC_REGEXP)[0];
-    const p_currency = src.replace(p_num, '').trim();
-    const currency = CURRENCY[p_currency] || p_currency;
-    const price = Number(p_num.replace(COMMA_REGEXP, ''));
-    return { currency, price };
+    try {
+      const NUMERIC_REGEXP = /[-]{0,1}[\d]*(,)*[\d]*[.]{0,1}[\d]+/g;
+      const COMMA_REGEXP = /,/g
+      const p_num = src.match(NUMERIC_REGEXP)[0];
+      const p_currency = src.replace(p_num, '').trim();
+      const currency = CURRENCY[p_currency] || p_currency;
+      const price = Number(p_num.replace(COMMA_REGEXP, ''));
+      return { currency, price };
+    } catch (error) {
+      return {
+        currency: '$',
+        price: 0,
+      };
+    }
   }
 
   async sleep(ms) {
@@ -566,6 +573,7 @@ class JcrewScraper extends ShoclefScraper {
 
   async getOldPrice() {
     const str_price = await this.findSingleValue('[data-qaid=pdpProductPriceRegular]', __RETURN.TEXT);
+    if (!str_price) return 0;
     const str_num = this.extractNumber(str_price);
     return Number(str_num);
   }
