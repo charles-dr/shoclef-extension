@@ -94,6 +94,7 @@ const _HOSTS_EMBEDDED = [
   'asos.com',
   'boozt.com',
   'brandsforless.com',
+  'extrapetitle.com',
   'jcrew.com',
   'madewell.com',
   'nordstrom.com',

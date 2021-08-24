@@ -20,7 +20,7 @@ const CURRENCY = {
   "元": "CNY",
 };
 
-
+const _TESTING = true;
 
 class ShoclefScraper {
   constructor(product, website) {
@@ -115,7 +115,7 @@ class ShoclefScraper {
     // submit data to airtable or do something else.
     console.log('[Scrap][Completed]', typeof this.product, this.product);
     try {
-      chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
+      if (!_TESTING) chrome.extension.sendMessage({ type: _ACTION.SCRAP_FINISHED, product: this.product });
     } catch (e) {
       console.log('[Scrap][Event][Completed] Error: ', e);
     }
@@ -1479,6 +1479,84 @@ class BrandsForLessScraper extends ShoclefScraper {
   }
 }
 
+class ExtraPetitleScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[ExtraPetitleScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[ExtraPetitleScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('#content .post-feed .entry-header > h1', __RETURN.TEXT);
+    this.product.description = '';
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getTitle() {
+    const title = await this.findSingleValue('#LeftSummaryPanel h1.it-ttl', __RETURN.TEXT);
+    return title.replace('Details about', '').trim();
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      // const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      const container = document.querySelectorAll('#product-detail .breadcrumb .container')[0];
+      const anchors = container.querySelectorAll('li.content a');
+      anchors.forEach((anchor, i) => {
+        if (i > 0) categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const text = document.querySelectorAll('#product-detail .product_detail_wrapper .view_content #price-slab .item_price')[0].innerText;
+      this.product.price = Number(text.split(' ')[1]);
+      this.product.currency = text.split(' ')[0].toUpperCase();
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+    try {
+      const elements = document.querySelectorAll('#content .entry-content img.size-full');
+      elements.forEach(element => images.push(element.getAttribute('src')));
+    } catch (e) {
+      console.log('[Images] error: ', e);
+      return [];
+    }
+    return images;
+  }
+
+  async getSizes() {
+    const sizes = [];
+    try {
+      const elements = document.querySelectorAll('#product-detail .product_detail_wrapper .item_details_wrapper .view_product_quality .size_list > li');
+      elements.forEach(element => sizes.push(element.innerText));
+    } catch (e) {
+      console.log('[Sizes] error: ', e);
+    }
+    return sizes;
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1486,6 +1564,7 @@ const mapHost2Scraper = {
   'asos.com': AsosScraper,
   'boozt.com': BooztScraper,
   'brandsforless.com': BrandsForLessScraper,
+  'extrapetite.com': ExtraPetitleScraper,
   'jcrew.com': JcrewScraper,
   'madewell.com': MadeWellScraper,
   'nordstrom.com': NordStromScraper,
@@ -1497,7 +1576,9 @@ const mapHost2Scraper = {
 $(function () {
   console.log("[Script][All] Loaded!", typeof fetchInfo);
   // window.addEventListener("keyup", doKeyPress, false); //add the keyboard handler
-  // startScraping();
+  if (_TESTING) {
+    startScraping();
+  }
 });
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
