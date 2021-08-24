@@ -258,8 +258,20 @@ const activity = {
         for (let i = 0; i < nIter; i++) {
           records = records.concat(await activity.DB_updateRecords(base, uProducts.slice(i * 10, (i + 1) * 10)));
           console.log(`[Uploading] ${records.length}/${uProducts.length}`)
+          await activity.messageToExtensionPage({
+            type: _ACTION.UPLOAD_PRODUCT,
+            status: true,
+            total: uProducts.length,
+            progress: records.length,
+          });
         }
         console.log('[Upload] Done');
+        await activity.messageToExtensionPage({
+          type: _ACTION.SYSTEM_MESSAGE,
+          status: true,
+          title: 'Upload Finished',
+          message: `Uploaded ${uProducts.length} successfully!`,
+        });
         return records;
         // return activity.DB_updateRecords(base, uProducts);
       });

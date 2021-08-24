@@ -16,6 +16,9 @@ function _addEventListeners() {
       const { data: setting } = payload;
       console.log('[Settings] updated', setting);
       updateTriggerForm(setting);
+    } else if (type === _ACTION.UPLOAD_PRODUCT) {
+      const { status, total, progress } = payload;
+      
     }
   });
 }

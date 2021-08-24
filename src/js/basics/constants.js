@@ -93,6 +93,7 @@ const _HOSTS_EMBEDDED = [
   'amazon.in',
   'asos.com',
   'boozt.com',
+  'brandsforless.com',
   'jcrew.com',
   'madewell.com',
   'nordstrom.com',

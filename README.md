@@ -49,10 +49,10 @@ https://www.nordstrom.com
 https://www.nordstromrack.com
 https://poshmark.com
 https://www.ebay.com
-
-
-
 https://www.brandsforless.com/en-om/mens-turkey-print-boxer-navy/642515/p/
+
+
+
 https://www.extrapetite.com/2021/04/petite-j-crew-camille-knit-blazer-review.html
 https://modesens.com/product/j.crew-farrah-triangle-bikini-top-belvedere-red-8547201/
 https://www.esquire.com/style/mens-fashion/g36572770/best-mens-fashion-sales-memorial-day-2021/

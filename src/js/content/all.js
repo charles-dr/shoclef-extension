@@ -1396,12 +1396,96 @@ class EbayScraper extends ShoclefScraper {
   }
 }
 
+class BrandsForLessScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[BrandsForLessScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[BrandsForLessScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('#product-detail .product_detail_wrapper .item_details_wrapper .view_content > p', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('.product_quality_detail #detailInfo ~ div ul', __RETURN.HTML);
+    this.product.brand = await this.findSingleValue('#product-detail .product_detail_wrapper .item_details_wrapper .view_content > a', __RETURN.TEXT);
+    this.product.category = await this.getCategory();
+    await this.getPrice();
+    this.product.images = await this.getImages();
+    this.product.sizes = await this.getSizes();
+
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getTitle() {
+    const title = await this.findSingleValue('#LeftSummaryPanel h1.it-ttl', __RETURN.TEXT);
+    return title.replace('Details about', '').trim();
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      // const container = document.querySelectorAll('#content > div > div > div:nth-child(3) > div.listing__layout-grid.listing__layout-item.listing__info.col-x24.col-m12 > div.d--fl.fw--w > div:nth-child(1)')[0];
+      const container = document.querySelectorAll('#product-detail .breadcrumb .container')[0];
+      const anchors = container.querySelectorAll('li.content a');
+      anchors.forEach((anchor, i) => {
+        if (i > 0) categories.push(anchor.innerText.trim());
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const text = document.querySelectorAll('#product-detail .product_detail_wrapper .view_content #price-slab .item_price')[0].innerText;
+      this.product.price = Number(text.split(' ')[1]);
+      this.product.currency = text.split(' ')[0].toUpperCase();
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+    try {
+      const thumbnails = document.querySelectorAll('#item-preview .item_preview_web .thumb-side-gallery + span .slick-list .slick-slide img');
+      thumbnails.forEach(image => images.push(image.getAttribute('src')));
+    } catch (e) {
+      console.log('[Images] error: ', e);
+      return [];
+    }
+    return images;
+  }
+
+  async getSizes() {
+    const sizes = [];
+    try {
+      const elements = document.querySelectorAll('#product-detail .product_detail_wrapper .item_details_wrapper .view_product_quality .size_list > li');
+      elements.forEach(element => sizes.push(element.innerText));
+    } catch (e) {
+      console.log('[Sizes] error: ', e);
+    }
+    return sizes;
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
   'amazon.in': Amazoncraper,
   'asos.com': AsosScraper,
   'boozt.com': BooztScraper,
+  'brandsforless.com': BrandsForLessScraper,
   'jcrew.com': JcrewScraper,
   'madewell.com': MadeWellScraper,
   'nordstrom.com': NordStromScraper,
