@@ -1635,6 +1635,94 @@ class ModeSensScraper extends ShoclefScraper {
   }
 }
 
+class TheYesScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[TheYesScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[TheYesScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('#content .pdpLayout .productInfoContainer .productTitleArea a ~ span', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('#content .productInfoContainer > div.container div.lockedAreas > div:first-child > div > div:nth-child(2)', __RETURN.TEXT);
+    this.product.brand = await this.getBrand();
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('#content .pdpLayout .productInfoContainer .productTitleArea a > span.brandTitle')[0].innerText;
+    } catch (e) {
+      console.log('[Brand] Error: ', e);
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      const anchors = document.querySelectorAll('#content div.breadcrumbsContainer div.breadcrumb .breadcrumb-text');
+      anchors.forEach((anchor, i) => {
+        if (i > 0) {
+          categories.push(anchor.innerText.replace('/').trim());
+        }
+      })
+      return categories
+        .filter((category, i, list) => list.indexOf(category) === i)
+        .filter(category => category != this.product.brand)
+        .join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const element = document.querySelectorAll('#content .pdpLayout .productInfoContainer .productPriceArea > h2')[0];
+      return Number(element.innerText.replace('$', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getOldPrice() {
+    try {
+      const element = document.querySelectorAll('#content .pdpLayout .productInfoContainer .productPriceArea > h5')[0];
+      return Number(element.innerText.replace('$', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+    try {
+      const elements = document.querySelectorAll('#content div.main-content div.carouselContainer div.sliderContainer > div > div > ul.carousel__slider-tray > li img');
+      elements.forEach(element => images.push(element.getAttribute('src')));
+    } catch (e) {
+      console.log('[Images] Error: ', e);
+    }    
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1649,6 +1737,7 @@ const mapHost2Scraper = {
   'nordstrom.com': NordStromScraper,
   'nordstromrack.com': NordStromRackScraper,
   'poshmark.com': PoshMarkScraper,
+  'theyes.com': TheYesScraper,
   'ebay.com': EbayScraper,
 };
 
