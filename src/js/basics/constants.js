@@ -97,6 +97,7 @@ const _HOSTS_EMBEDDED = [
   'extrapetitle.com',
   'jcrew.com',
   'madewell.com',
+  'modesens.com',
   'nordstrom.com',
   'nordstromrack.com',
   'poshmark.com',

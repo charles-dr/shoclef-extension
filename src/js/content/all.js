@@ -1557,6 +1557,84 @@ class ExtraPetitleScraper extends ShoclefScraper {
   }
 }
 
+class ModeSensScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[ModeSensScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[ModeSensScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('#prd-info #designer-product .prd-name', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('#pro-detail-con', __RETURN.HTML);
+    this.product.brand = await this.getBrand();
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('#designer-product [itemprop=brand] a')[0].innerText;
+    } catch (e) {
+      console.log('[Brand] Error: ', e);
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      const container = document.querySelectorAll('.crumbwrap-con > ul')[0];
+      const anchors = container.querySelectorAll('li');
+      anchors.forEach((anchor, i) => {
+        if (i > 2) {
+          categories.push(anchor.innerText.replace('/').trim());
+        }
+      })
+      return categories.join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const element = document.querySelectorAll('#prd-info .price-pid > span')[0];
+      return Number(element.innerText.replace('$', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+
+    const getImageOfSwatch= async () => {
+      const thumbnails = document.querySelectorAll('#gallery > .gallery-box > .imgm');
+      for (let thumb of thumbnails) {
+        thumb.click();
+        await this.sleep(20);
+        images.push(document.querySelectorAll('#img-wrapper .img-wrapper img')[0].getAttribute('src'));
+      }
+    };
+    await getImageOfSwatch();
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1567,6 +1645,7 @@ const mapHost2Scraper = {
   'extrapetite.com': ExtraPetitleScraper,
   'jcrew.com': JcrewScraper,
   'madewell.com': MadeWellScraper,
+  'modesens.com': ModeSensScraper,
   'nordstrom.com': NordStromScraper,
   'nordstromrack.com': NordStromRackScraper,
   'poshmark.com': PoshMarkScraper,
