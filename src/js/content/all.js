@@ -1723,6 +1723,106 @@ class TheYesScraper extends ShoclefScraper {
   }
 }
 
+class ZalandoScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[ZalandoScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[ZalandoScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "GBP";
+    this.product.title = await this.findSingleValue('span.EKabf7.R_QwOV', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('div.VaE1kV.C3wGFf.JT3_zV > div > div._4qWUe8.VHXqc_.rceRmQ._4NtqZU.mIlIve > div:nth-child(5) > div', __RETURN.HTML);
+    this.product.brand = await this.getBrand();
+    // this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('body div._4qWUe8.VHXqc_.rceRmQ._4NtqZU.mIlIve div._1z5_Qg.lm1Id5 > a > span > h3')[0].innerText.toLowerCase();
+    } catch (e) {
+      console.log('[Brand] Error: ', e);
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      const anchors = document.querySelectorAll('#content div.breadcrumbsContainer div.breadcrumb .breadcrumb-text');
+      anchors.forEach((anchor, i) => {
+        if (i > 0) {
+          categories.push(anchor.innerText.replace('/').trim());
+        }
+      })
+      return categories
+        .filter((category, i, list) => list.indexOf(category) === i)
+        .filter(category => category != this.product.brand)
+        .join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const element = document.querySelectorAll("span.uqkIZw.ka2E9k.uMhVZi")[0];
+      return Number(element.innerText.replace('£', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getOldPrice() {
+    try {
+      const element = document.querySelectorAll('span.uqkIZw.ka2E9k.uMhVZi.ZiDB59')[0];
+      return Number(element.innerText.replace('£', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+    try {
+      const thumbnails = document.querySelectorAll("li.LiPgRT.DlJ4rT.hPWzFB img");
+      for (let thumbnail of thumbnails) {
+        // thumbnail.click();
+        var event = new MouseEvent('mouseover', {
+          'view': window,
+          'bubbles': true,
+          'cancelable': true
+        });
+        
+        thumbnail.dispatchEvent(event);
+        await this.sleep(20);
+      }
+      const elements = document.querySelectorAll("li.LiPgRT.DlJ4rT.S3xARh img");
+      elements.forEach(element => images.push(element.getAttribute('src')));
+    } catch (e) {
+      console.log('[Images] Error: ', e);
+    }    
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1738,6 +1838,7 @@ const mapHost2Scraper = {
   'nordstromrack.com': NordStromRackScraper,
   'poshmark.com': PoshMarkScraper,
   'theyes.com': TheYesScraper,
+  'zalando.co.uk': ZalandoScraper,
   'ebay.com': EbayScraper,
 };
 
