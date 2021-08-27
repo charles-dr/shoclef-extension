@@ -102,6 +102,7 @@ const _HOSTS_EMBEDDED = [
   'nordstromrack.com',
   'poshmark.com',
   'theyes.com',
+  "verishop.com",
   'zalando.co.uk',
   'ebay.com',
 ];

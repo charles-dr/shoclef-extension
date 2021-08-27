@@ -52,18 +52,20 @@ https://modesens.com/product/j.crew-farrah-triangle-bikini-top-belvedere-red-854
 https://www.nordstrom.com
 https://www.nordstromrack.com
 https://poshmark.com
+
 https://www.theyes.com
-
-
-
-
 https://www.zalando.co.uk/madewell-mules-true-black-m3j11a00s-q11.html
+
+
+
 https://www.google.com/search?q=av161+navy+jcrew&source=lnms&tbm=isch&sa=X&ved=2ahUKEwi_4J3sxK7yAhWHt54KHe-8CysQ_AUoA3oECAEQBQ&biw=1063&bih=700#imgrc=3BFzFgNSowYOUM
 
 https://www.verishop.com
 https://www.verishop.com/madewell/shoes/joy-wavy-lizard-colorblock-slip-on-sandals/p4521185017879?variant_id=31713976254487
 https://www.esquire.com/style/mens-fashion/g36572770/best-mens-fashion-sales-memorial-day-2021/
 https://www.shopbop.com 
+
+
 
 https://www.shopstyle.com
 https://www.zappos.com https://www.zappos.com/p/madewell-classic-straight-jeans-in-calabria-wash-ripped-edition/product/9496421

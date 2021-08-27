@@ -1594,7 +1594,7 @@ class ModeSensScraper extends ShoclefScraper {
       const anchors = container.querySelectorAll('li');
       anchors.forEach((anchor, i) => {
         if (i > 2) {
-          categories.push(anchor.innerText.replace('/').trim());
+          categories.push(anchor.innerText.replace('/', '').trim());
         }
       })
       return categories.join(CONFIG.DELIMITER);
@@ -1672,7 +1672,7 @@ class TheYesScraper extends ShoclefScraper {
       const anchors = document.querySelectorAll('#content div.breadcrumbsContainer div.breadcrumb .breadcrumb-text');
       anchors.forEach((anchor, i) => {
         if (i > 0) {
-          categories.push(anchor.innerText.replace('/').trim());
+          categories.push(anchor.innerText.replace('/', '').trim());
         }
       })
       return categories
@@ -1760,7 +1760,7 @@ class ZalandoScraper extends ShoclefScraper {
       const anchors = document.querySelectorAll('#content div.breadcrumbsContainer div.breadcrumb .breadcrumb-text');
       anchors.forEach((anchor, i) => {
         if (i > 0) {
-          categories.push(anchor.innerText.replace('/').trim());
+          categories.push(anchor.innerText.replace('/', '').trim());
         }
       })
       return categories
@@ -1823,6 +1823,98 @@ class ZalandoScraper extends ShoclefScraper {
   }
 }
 
+class VerishopScraper extends ShoclefScraper {
+  constructor(product, website = {}) {
+    console.log('[ZalandoScraper] initialized!', product, website);
+    super(product, website);
+  }
+
+  async doScrap() {
+    console.log('[ZalandoScraper] starting...');
+    await this.sleep(1000);
+    this.product.currency = "$";
+    this.product.title = await this.findSingleValue('[class*=ProductBasicInfo_title]', __RETURN.TEXT);
+    this.product.description = await this.findSingleValue('[class*=ProductSpecifications_specificationsRow]', __RETURN.HTML);
+    this.product.brand = await this.getBrand();
+    this.product.category = await this.getCategory();
+    this.product.price = await this.getPrice();
+    this.product.oldPrice = await this.getOldPrice();
+    this.product.images = await this.getImages();
+    this.product.variants = await this.getVariants();
+
+    this.completeScraping();
+  }
+
+  async getBrand() {
+    try {
+      return document.querySelectorAll('[class*=ProductBasicInfo_brandLink]')[0].innerText;
+    } catch (e) {
+      console.log('[Brand] Error: ', e);
+      return '';
+    }
+  }
+
+  async getCategory() {
+    try {
+      const categories = [];
+      const anchors = document.querySelectorAll('[class*=Breadcrumbs_root] > [class*=Breadcrumbs_item]');
+      anchors.forEach((anchor, i) => {
+        categories.push(anchor.innerText.replace('/', '').trim());
+      });
+      return categories
+        .filter((category, i, list) => list.indexOf(category) === i)
+        .join(CONFIG.DELIMITER);
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async getPrice() {
+    try {
+      const text = await this.findSingleValue('[class*=Pricing_priceContainer] > [class*=Pricing_price] > span', __RETURN.TEXT);
+      
+      return Number(text.replace('$', ''));
+    } catch (e) {
+      console.log('[Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getOldPrice() {
+    try {
+      const element = document.querySelectorAll('[class*=Pricing_priceContainer] > [class*=Pricing_price] > span')[1];
+      return Number(element.innerText.replace('$', ''));
+    } catch (e) {
+      console.log('[Old Price]', e);
+      this.product.price = 0;
+      this.product.oldPrice = 0;
+    }
+  }
+
+  async getImages() {
+    const images = [];
+    try {
+      const t = await this.findSingleValue('[class*=ImageCarousel_image][class*=ProgressiveImage_root]', __RETURN.TEXT);
+      const thumbnails = document.querySelectorAll('[class*=ProductDetailViewThumbnails_image]');
+      for (const thumbnail of thumbnails) {
+        thumbnail.click();
+        await this.sleep(30);
+      }
+      const elements = document.querySelectorAll('[class*=ImageCarousel_image][class*=ProgressiveImage_root] > img[class*=ProgressiveImage_blurOut]');
+      elements.forEach(element => images.push(element.getAttribute('src')));
+    } catch (e) {
+      console.log('[Images] Error: ', e);
+    }    
+    return images
+      .filter((url, i, self) => self.indexOf(url) === i);
+  }
+
+  async getVariants() {
+    return [];
+  }
+}
+
 const mapHost2Scraper = {
   '6pm.com': PM6Scraper,
   'amazon.com': Amazoncraper,
@@ -1838,6 +1930,7 @@ const mapHost2Scraper = {
   'nordstromrack.com': NordStromRackScraper,
   'poshmark.com': PoshMarkScraper,
   'theyes.com': TheYesScraper,
+  "verishop.com": VerishopScraper,
   'zalando.co.uk': ZalandoScraper,
   'ebay.com': EbayScraper,
 };
